@@ -150,11 +150,10 @@ ContDiffOn 𝕜 ⊤ ((Chart1_LocalHomeomorphFixedCodomain_kn hdim hv).symm.trans
   change ContDiffOn 𝕜 ⊤ ((Chart1_LocalHomeomorph hw) ∘ (Chart1_LocalHomeomorph hv).symm ∘ f) _
   rw [←Function.comp.assoc] 
   refine ContDiffOn.comp_continuousLinearMap ?_ f
-  apply ChangeOfChart_IsSmoothOn 
+  apply ChangeOfChart'_IsSmoothOn 
   exact hv 
 
 def ModelPn := modelWithCornersSelf 𝕜 (Fin n → 𝕜)
-
 
 def Pn_SmoothManifold :
 @SmoothManifoldWithCorners _ _ _ _ _ _ _ ModelPn (ℙ 𝕜 E) _ (ChartedSpacePn hdim) :=
@@ -172,8 +171,6 @@ _ (ChartedSpacePn hdim)
 )
 
 
-
-end ChangeOfCharts
 
 
 
