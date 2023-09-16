@@ -90,11 +90,45 @@ lemma Smooth.quotientMap :
       . exact contDiffOn_id 
     . apply contDiffOn_const  
   
-    
+
+/- The Projectivization.mk' map admits local smooth sections: if we have a nonzero continuous linear form φ
+and a point x in ℙ(E) such that φ(x.rep)=1, then the map y => (1 / φ(y.rep)) • y.rep sends
+Goodset φ to {φ = 1}, hence to E-{0}, and it is a section of Projectivization.mk'. We introduce it
+and prove that it is smooth.-/
+
+def ProjectiveSpace.LocalSection (φ : E →L[𝕜] 𝕜) :
+ℙ 𝕜 E → Estar E := by 
+  intro y 
+  by_cases hgood : φ y.rep = 0 
+  . exact Classical.choice inferInstance  
+  . refine ⟨(1 / (φ y.rep)) • y.rep, ?_⟩
+    unfold Estar
+    simp only [one_div, ne_eq, Set.mem_setOf_eq, smul_eq_zero, inv_eq_zero]
+    rw [not_or, and_iff_right hgood]
+    exact NonzeroOfNonzeroPhi hgood
+
+lemma ProjectiveSpace.LocalSectionIsSection (φ : E →L[𝕜] 𝕜) {y : ℙ 𝕜 E} (hy : y ∈ Goodset φ) : 
+Projectivization.mk' 𝕜 (ProjectiveSpace.LocalSection φ y) = y := by
+  unfold ProjectiveSpace.LocalSection
+  change φ (y.rep) ≠ 0 at hy
+  simp only [hy, one_div, dite_false, Projectivization.mk'_eq_mk]
+  conv => rhs
+          rw [←(Projectivization.mk_rep y)]
+  apply Eq.symm
+  rw [Projectivization.mk_eq_mk_iff]  
+  existsi Units.mk0 (φ y.rep) hy 
+  simp only [Units.smul_mk0, ne_eq]
+  rw [smul_smul]
+  simp only [ne_eq, hy, not_false_eq_true, mul_inv_cancel, one_smul]
+
+lemma ProjectiveSpace.LocalSection_IsSmoothOn (φ : E →L[𝕜] 𝕜) :
+@ContMDiffOn 𝕜 _ (LinearMap.ker χ) _ _ (LinearMap.ker χ) _ ModelHyperplane (ℙ 𝕜 E) _ 
+(ChartedSpaceProjectiveSpace hχ hsep) E _ _ E _ (modelWithCornersSelf 𝕜 E) (Estar E) _ _ ⊤
+(ProjectiveSpace.LocalSection φ) (Goodset φ) := by sorry 
+
+
 /- If f is map from ℙ(E) to a manifold such that f ∘ Projectivization.mk'is smooth, we prove that f is
 smooth. This is useful to construct smooth maps from ℙ(E).-/
-
-
 
 lemma Smooth.mapFromProjectiveSpace {F : Type u} [NormedAddCommGroup F] [NormedSpace 𝕜 F] {H : Type u}
 [TopologicalSpace H] {I : ModelWithCorners 𝕜 F H} {M : Type u} [TopologicalSpace M] [ChartedSpace H M]
@@ -104,13 +138,30 @@ lemma Smooth.mapFromProjectiveSpace {F : Type u} [NormedAddCommGroup F] [NormedS
 (ChartedSpaceProjectiveSpace hχ hsep) F _ _ H _ I M _ _ ⊤ f := by 
   set CS := ChartedSpaceProjectiveSpace hχ hsep
   set SM := ProjectiveSpace_SmoothManifold hχ hsep 
-  rw [contMDiff_iff] at hf ⊢
-  constructor
-  . rw [continuous_def] at hf ⊢
-    intro U hU 
-    rw [isOpen_coinduced, ←Set.preimage_comp]
-    exact hf.1 U hU   
-  . intro x y 
-    have h := hf.2 ⟨x.rep, Projectivization.rep_nonzero x⟩ y  
-    
+  apply contMDiff_of_locally_contMDiffOn
+  intro x 
+  set φ := (Classical.choose (hsep.exists_eq_one (Projectivization.rep_nonzero x)))
+  set hφ := (Classical.choose_spec (hsep.exists_eq_one (Projectivization.rep_nonzero x)))
+  exists Goodset φ
+  rw [and_iff_right (GoodsetIsOpen φ)]
+  constructor 
+  . change φ x.rep ≠ 0
+    rw [hφ]
+    exact one_ne_zero
+  . set g : ℙ 𝕜 E → M := f ∘ (Projectivization.mk' 𝕜) ∘ (ProjectiveSpace.LocalSection φ) with hgdef
+    have heq : ∀ (y : ℙ 𝕜 E), y ∈ Goodset φ → f y = g y := by 
+      intro y hy 
+      rw [hgdef]
+      simp only [ne_eq, Function.comp_apply]
+      rw [ProjectiveSpace.LocalSectionIsSection]
+      exact hy
+    refine ContMDiffOn.congr ?_ heq  
+    rw [hgdef, ←Function.comp.assoc]
+    refine @ContMDiffOn.comp 𝕜 _ (LinearMap.ker χ) _ _ (LinearMap.ker χ) _ ModelHyperplane (ℙ 𝕜 E) _
+      (ChartedSpaceProjectiveSpace hχ hsep) E _ _ E _ (modelWithCornersSelf 𝕜 E) (Estar E) _ _ 
+      F _ _ H _ I M _ _ (ProjectiveSpace.LocalSection φ) (Goodset φ) ⊤ ⊤ 
+      (f ∘ (Projectivization.mk' 𝕜)) (ContMDiff.contMDiffOn (s := ⊤) hf) ?_ ?_
+    . apply ProjectiveSpace.LocalSection_IsSmoothOn 
+    . simp only [Set.top_eq_univ, Set.preimage_univ, Set.subset_univ]
+
 
