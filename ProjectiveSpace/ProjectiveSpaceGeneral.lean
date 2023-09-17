@@ -60,6 +60,11 @@ TopologicalSpace.coinduced (Projectivization.mk' 𝕜) instTopologicalSpaceSubty
 
 def Goodset (φ : E →L[𝕜] 𝕜) : Set (ℙ 𝕜 E) := {x | φ x.rep ≠ 0}
 
+lemma GoodsetZero {φ : E →L[𝕜] 𝕜} (hφ : φ = 0) : Goodset φ = ∅ := by 
+  unfold Goodset 
+  rw [hφ]
+  simp only [ContinuousLinearMap.zero_apply, ne_eq, not_true, Set.setOf_false]
+
 lemma GoodsetPreimage (φ : E →L[𝕜] 𝕜) {u : E} (hu : u ≠ 0) :
 (φ u ≠ 0) ↔ Projectivization.mk 𝕜 u hu ∈ Goodset φ := by 
   set x := Projectivization.mk 𝕜 u hu 
@@ -456,12 +461,20 @@ LocalHomeomorph.transHomeomorph (ChartAt_aux hsep x)
 (OneIsomorphismBetweenTwoClosedHyperplanes (NonzeroPhiOfPhiEqOne (Classical.choose_spec 
 (hsep.exists_eq_one (Projectivization.rep_nonzero x)))) hχ))
 
+
 lemma ProjectiveSpace.ChartAt_source (x : ℙ 𝕜 E) :
 (ProjectiveSpace.ChartAt hχ hsep x).source = 
 Goodset (Classical.choose (hsep.exists_eq_one (Projectivization.rep_nonzero x))) := by
   unfold ProjectiveSpace.ChartAt ProjectiveSpace.ChartAt_aux Chart1_LocalHomeomorph Chart1_LocalEquiv
   simp only [Set.top_eq_univ, LocalHomeomorph.transHomeomorph_source]
 
+lemma ProjectiveSpace.Chart_source {φ : E →L[𝕜] 𝕜} {v : E} (hv : φ v = 1) :
+(LocalHomeomorph.transHomeomorph 
+    (Chart1_LocalHomeomorph hv) (ContinuousLinearEquiv.toHomeomorph
+    (OneIsomorphismBetweenTwoClosedHyperplanes (NonzeroPhiOfPhiEqOne hv) hχ))).source = 
+  Goodset φ := by 
+  unfold Chart1_LocalHomeomorph Chart1_LocalEquiv
+  simp only [Set.top_eq_univ, LocalHomeomorph.transHomeomorph_source]
 
 lemma Chart1_LocalHomeomorphFixedCodomain_source {φ : E →L[𝕜] 𝕜} {x : ℙ 𝕜 E} 
 (hx: φ x.rep = 1) : 

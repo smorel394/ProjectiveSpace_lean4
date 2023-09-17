@@ -121,11 +121,55 @@ Projectivization.mk' 𝕜 (ProjectiveSpace.LocalSection φ y) = y := by
   rw [smul_smul]
   simp only [ne_eq, hy, not_false_eq_true, mul_inv_cancel, one_smul]
 
+lemma ProjectiveSpace.LocalSection_IsContinuousOn (φ : E →L[𝕜] 𝕜) :
+ContinuousOn (ProjectiveSpace.LocalSection φ) (Goodset φ) := by sorry
+
 lemma ProjectiveSpace.LocalSection_IsSmoothOn (φ : E →L[𝕜] 𝕜) :
 @ContMDiffOn 𝕜 _ (LinearMap.ker χ) _ _ (LinearMap.ker χ) _ ModelHyperplane (ℙ 𝕜 E) _ 
 (ChartedSpaceProjectiveSpace hχ hsep) E _ _ E _ (modelWithCornersSelf 𝕜 E) (Estar E) _ _ ⊤
-(ProjectiveSpace.LocalSection φ) (Goodset φ) := by sorry 
+(ProjectiveSpace.LocalSection φ) (Goodset φ) := by 
+  set CS := ChartedSpaceProjectiveSpace hχ hsep
+  set SM := ProjectiveSpace_SmoothManifold hχ hsep 
+  by_cases hφ : φ = 0 
+  . rw [GoodsetZero hφ]
+    apply contMDiffOn_of_locally_contMDiffOn
+    simp only [Set.mem_empty_iff_false, Set.empty_inter, IsEmpty.forall_iff, implies_true]
+  . have hφ' : ∃ (v : E), φ v = 1 := by 
+      match ContinuousLinearMap.exists_ne_zero hφ with 
+      | ⟨w, hw⟩ =>
+        existsi (1 / (φ w)) • w 
+        simp only [one_div, map_smul, smul_eq_mul, ne_eq]
+        simp only [ne_eq, hw, not_false_eq_true, inv_mul_cancel]
+    match hφ' with 
+    | ⟨v, hv⟩ =>
+      have hv' : φ v ≠ 0 := by rw [hv]; exact one_ne_zero
+      set x := Projectivization.mk 𝕜 v (NonzeroOfNonzeroPhi hv')
+      set y := x.rep
+      rw [@contMDiffOn_iff_of_mem_maximalAtlas 𝕜 _ (LinearMap.ker χ) _ _ _ _ ModelHyperplane (ℙ 𝕜 E) _
+        CS SM E _ _ _ _ (modelWithCornersSelf 𝕜 E) (Estar E) _ _ _ (LocalHomeomorph.transHomeomorph 
+        (Chart1_LocalHomeomorph hv) (ContinuousLinearEquiv.toHomeomorph
+        (OneIsomorphismBetweenTwoClosedHyperplanes (NonzeroPhiOfPhiEqOne hv) hχ))) 
+        (OpenEmbedding.toLocalHomeomorph (fun u => u.1) (EstarToE E)) (ProjectiveSpace.LocalSection φ)
+        (Goodset φ) ⊤ 
+        (by apply SmoothManifoldWithCorners.subset_maximalAtlas 
+            change _ ∈ @atlas (LinearMap.ker χ) _ (ℙ 𝕜 E) _ (ChartedSpaceProjectiveSpace hχ hsep) 
+            change _ ∈  {f | ∃ (φ : E →L[𝕜] 𝕜) (v : E) (hv : φ v = 1), f = LocalHomeomorph.transHomeomorph 
+              (Chart1_LocalHomeomorph hv) (ContinuousLinearEquiv.toHomeomorph
+              (OneIsomorphismBetweenTwoClosedHyperplanes (NonzeroPhiOfPhiEqOne hv) hχ))}
+            simp only [Set.mem_setOf_eq]
+            existsi φ; existsi v; existsi hv
+            rfl)
+        (by apply SmoothManifoldWithCorners.subset_maximalAtlas 
+            change _ ∈ {(OpenEmbedding.toLocalHomeomorph (fun u => u.1) (EstarToE E))}
+            simp only [Set.mem_singleton_iff])
+        (by rw [ProjectiveSpace.Chart_source])
+        (by simp only [OpenEmbedding.toLocalHomeomorph_source]
+            apply Set.mapsTo_univ)]
+      constructor
+      . exact ProjectiveSpace.LocalSection_IsContinuousOn φ 
+      . sorry 
 
+ 
 
 /- If f is map from ℙ(E) to a manifold such that f ∘ Projectivization.mk'is smooth, we prove that f is
 smooth. This is useful to construct smooth maps from ℙ(E).-/
