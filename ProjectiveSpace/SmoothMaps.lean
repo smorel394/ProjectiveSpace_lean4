@@ -121,7 +121,13 @@ Projectivization.mk' 𝕜 (ProjectiveSpace.LocalSection φ y) = y := by
   rw [smul_smul]
   simp only [ne_eq, hy, not_false_eq_true, mul_inv_cancel, one_smul]
 
-lemma NonzeroExistsEqOne {φ : E→L[𝕜] 𝕜} (hφ : φ ≠ 0) : ∃ (v : E), φ v = 1 := sorry
+lemma NonzeroExistsEqOne {φ : E→L[𝕜] 𝕜} (hφ : φ ≠ 0) : ∃ (v : E), φ v = 1 := by 
+  match ContinuousLinearMap.exists_ne_zero hφ with
+  | ⟨u, hu⟩ => 
+    existsi (1 / φ u) • u 
+    simp only [one_div, map_smul, smul_eq_mul, ne_eq]
+    rw [mul_comm]
+    simp only [ne_eq, hu, not_false_eq_true, mul_inv_cancel]
 
 def RetractionOnHyperplane {φ : E →L[𝕜] 𝕜} (hφ : φ ≠ 0) : (Estar E) → {u : E | φ u = 1} := by 
   intro u 
@@ -131,7 +137,38 @@ def RetractionOnHyperplane {φ : E →L[𝕜] 𝕜} (hφ : φ ≠ 0) : (Estar E)
     simp only [one_div, Set.mem_setOf_eq, map_smul, smul_eq_mul, ne_eq, h, not_false_eq_true, inv_mul_cancel]
 
 lemma RetractionOnHyperplaneIsContinuousOn {φ : E →L[𝕜] 𝕜} (hφ : φ ≠ 0) :
-ContinuousOn (RetractionOnHyperplane hφ) {u : Estar E | φ u ≠ 0} := sorry
+ContinuousOn (RetractionOnHyperplane hφ) {u : Estar E | φ u ≠ 0} := by
+  rw [continuousOn_iff_continuous_restrict, continuous_induced_rng]
+  set f : {u : Estar E | φ u.1 ≠ 0} → E :=  fun u => (1 / φ u.1) • u.1.1
+  have heq : ∀ u, f u = (Subtype.val ∘ Set.restrict {u : Estar E| φ u.1 ≠ 0} (RetractionOnHyperplane hφ)) u := by
+    intro u
+    simp only [ne_eq, Set.coe_setOf, Set.mem_setOf_eq, Function.comp_apply, Set.restrict_apply] 
+    unfold RetractionOnHyperplane
+    have hu : φ u ≠ 0 := u.2
+    simp only [one_div, hu, Set.mem_setOf_eq, dite_false]
+  refine Continuous.congr ?_ heq 
+  apply Continuous.smul
+  . simp_rw [one_div]
+    apply Continuous.inv₀ 
+    . rename_i inst_4
+      aesop_unfold [Function.comp]
+      simp_all only [ne_eq, nonempty_subtype, Set.coe_setOf, Set.mem_setOf_eq, one_div, Set.restrict_apply,
+        Subtype.forall]
+      unhygienic with_reducible aesop_destruct_products
+      apply Continuous.clm_apply
+      · apply continuous_const
+      · apply Continuous.comp'
+        · apply continuous_induced_dom
+        · apply continuous_induced_dom
+    . exact fun u => u.2 
+  . rename_i inst_4
+    aesop_unfold [Function.comp]
+    simp_all only [ne_eq, nonempty_subtype, Set.coe_setOf, Set.mem_setOf_eq, one_div, Set.restrict_apply,
+      Subtype.forall]
+    unhygienic with_reducible aesop_destruct_products
+    apply Continuous.comp'
+    · apply continuous_induced_dom
+    · apply continuous_induced_dom
 
 def InclusionHyperplane (φ : E →L[𝕜] 𝕜) : {u : E | φ u = 1} → Estar E := by
   intro ⟨u, hu⟩
@@ -142,7 +179,10 @@ def InclusionHyperplane (φ : E →L[𝕜] 𝕜) : {u : E | φ u = 1} → Estar 
   simp only [Set.mem_setOf_eq, map_zero, zero_ne_one] at hu  
 
 lemma InclusionHyperplaneIsContinuous (φ : E →L[𝕜] 𝕜) :
-Continuous (InclusionHyperplane φ) := sorry
+Continuous (InclusionHyperplane φ) := by
+  unfold InclusionHyperplane 
+  simp only [Set.coe_setOf, Set.mem_setOf_eq]
+  continuity
 
 lemma ProjectiveSpace.LocalSection_IsContinuousOn {φ : E →L[𝕜] 𝕜} (hφ : φ ≠ 0) :
 ContinuousOn (ProjectiveSpace.LocalSection φ) (Goodset φ) := by 
@@ -150,51 +190,28 @@ ContinuousOn (ProjectiveSpace.LocalSection φ) (Goodset φ) := by
   intro U hU 
   rw [isOpen_coinduced]
   have heq : (Projectivization.mk' 𝕜) ⁻¹' (Goodset φ ∩ (LocalSection φ) ⁻¹' U) = {u | φ u.1 ≠ 0} ∩
-    (RetractionOnHyperplane hφ) ⁻¹' ((InclusionHyperplane φ) ⁻¹' U) := by sorry
-/-    ext u 
-    simp only [ne_eq, Set.preimage_inter, Set.mem_inter_iff, Set.mem_preimage, Projectivization.mk'_eq_mk,
+    (RetractionOnHyperplane hφ) ⁻¹' ((InclusionHyperplane φ) ⁻¹' U) := by 
+    ext u 
+    simp only [Set.preimage_inter, Set.mem_inter_iff, Set.mem_preimage, Projectivization.mk'_eq_mk,
       Set.coe_setOf]
-    constructor 
-    . intro ⟨hu1, hu2⟩
-      change (φ (Projectivization.mk 𝕜 u.1 u.2).rep) ≠ 0 at hu1 
-      unfold LocalSection at hu2 
-      simp only [ne_eq, hu1, dite_false] at hu2 
-      change Projectivization.mk 𝕜 u.1 u.2 ∈ Goodset φ at hu1 
-      rw [←GoodsetPreimage] at hu1
-      unfold RetractionOnHyperplane 
-      simp only [hu1, Set.mem_setOf_eq, dite_false] 
-      have h1 : (1 / (φ u)) • u.1 ∈ Estar E := by
-        unfold Estar
-        simp only [ne_eq, one_div, Set.mem_setOf_eq, smul_eq_zero, inv_eq_zero] 
-        rw [not_or, and_iff_right hu1]
-        exact NonzeroOfNonzeroPhi hu1
-      have h2 : ⟨(1/ φ u) • u.1, h1⟩ ∈ U := by 
-        have heq : (1 / φ u) • u.1 = (1 / φ (Projectivization.mk 𝕜 u.1 u.2).rep) • 
-         (Projectivization.mk 𝕜 u.1 u.2).rep := by 
-          apply Projectivization_vs_LinearMap_cor 
-          rw [Projectivization.mk_rep]
-        simp_rw [heq] 
-        exact hu2 
-      unfold InclusionHyperplane
-      simp only 
-      exact h2 
-    . intro hu
-      set v := RetractionOnHyperplane hφ u with hvdef
-      have hv : v.1 ≠ 0 := sorry
-      have heq : Projectivization.mk 𝕜 u.1 u.2 = Projectivization.mk 𝕜 v.1 hv := sorry 
-      rw [heq]
-      have hgood : φ (Projectivization.rep (Projectivization.mk 𝕜 v.1 hv)) ≠ 0 := sorry 
-      constructor
-      . rw [←GoodsetPreimage, v.2]
-        exact one_ne_zero
-      . unfold LocalSection
-        simp only [Set.mem_setOf_eq, hgood, dite_false]
-        simp_rw [←hvdef]
-        have heq' : (1/ φ (Projectivization.mk 𝕜 v.1 hv).rep) • (Projectivization.mk 𝕜 v.1 hv).rep = v.1 := sorry 
-        simp_rw [heq']
-        unfold InclusionHyperplane at hu 
-        simp only [Set.mem_setOf_eq] at hu 
-        exact hu -/
+    rw [←GoodsetPreimage]
+    change _ ↔ φ u ≠ 0 ∧ _ 
+    simp only [and_congr_right_iff]
+    intro hu 
+    have hunz := NonzeroOfNonzeroPhi hu 
+    unfold RetractionOnHyperplane 
+    simp only [hu, Set.mem_setOf_eq, dite_false]
+    unfold LocalSection
+    rw [GoodsetPreimage φ hunz] at hu 
+    change φ _ ≠ 0 at hu 
+    simp only [hu, dite_false, Set.mem_setOf_eq]
+    have heq' : (1 / φ (Projectivization.mk 𝕜 u.1 hunz).rep) • (Projectivization.mk 𝕜 u.1 hunz).rep = 
+       (1/ φ u) • u.1 := by 
+      apply Projectivization_vs_LinearMap_cor 
+      rw [Projectivization.mk_rep]   
+    simp_rw [heq']
+    unfold InclusionHyperplane
+    simp only 
   rw [heq] 
   refine ContinuousOn.preimage_open_of_open (RetractionOnHyperplaneIsContinuousOn hφ) ?_ 
     (IsOpen.preimage (InclusionHyperplaneIsContinuous φ) hU)
@@ -242,9 +259,68 @@ lemma ProjectiveSpace.LocalSection_IsSmoothOn (φ : E →L[𝕜] 𝕜) :
         (by simp only [OpenEmbedding.toLocalHomeomorph_source]
             apply Set.mapsTo_univ)]
       constructor
-      . exact ProjectiveSpace.LocalSection_IsContinuousOn φ 
-      . sorry 
-
+      . exact ProjectiveSpace.LocalSection_IsContinuousOn hφ 
+      . have heq1 : (↑(LocalHomeomorph.extend (LocalHomeomorph.transHomeomorph (Chart1_LocalHomeomorph hv)
+          (ContinuousLinearEquiv.toHomeomorph (OneIsomorphismBetweenTwoClosedHyperplanes hφ hχ)))
+          ModelHyperplane) '' Goodset φ) = ⊤ := by
+          ext  u
+          simp only [LocalHomeomorph.extend, LocalEquiv.coe_trans, ModelWithCorners.toLocalEquiv_coe,
+            LocalHomeomorph.toFun_eq_coe, LocalHomeomorph.transHomeomorph_apply, ContinuousLinearEquiv.coe_toHomeomorph,
+            Function.comp_apply, Set.mem_image, Set.top_eq_univ, Set.mem_univ, iff_true]
+          set w := v + ((OneIsomorphismBetweenTwoClosedHyperplanes hφ hχ).symm u).1 
+          existsi Chart2 hv ((OneIsomorphismBetweenTwoClosedHyperplanes hφ hχ).symm u) 
+          rw [and_iff_right (Chart2_CodomainGoodset hv _)]
+          unfold Chart1_LocalHomeomorph Chart1_LocalEquiv
+          simp only [Set.top_eq_univ, LocalHomeomorph.mk_coe]
+          rw [Chart1Chart2]
+          simp only [ContinuousLinearEquiv.apply_symm_apply]
+          unfold ModelHyperplane 
+          simp only [modelWithCornersSelf_coe, id_eq]
+        rw [heq1]
+        simp only [LocalHomeomorph.extend, modelWithCornersSelf_localEquiv, LocalEquiv.trans_refl,
+          LocalHomeomorph.toFun_eq_coe, OpenEmbedding.toLocalHomeomorph_apply, LocalEquiv.coe_trans_symm,
+          Set.top_eq_univ]
+        set f := ((fun u => ↑u) ∘ LocalSection φ ∘ ↑(LocalEquiv.symm (LocalHomeomorph.transHomeomorph 
+          (Chart1_LocalHomeomorph hv) (ContinuousLinearEquiv.toHomeomorph
+          (OneIsomorphismBetweenTwoClosedHyperplanes hφ hχ))).toLocalEquiv) ∘
+          ↑(LocalEquiv.symm ModelHyperplane.toLocalEquiv))
+        set g : LinearMap.ker χ → E := (fun u => v + u.1) ∘ (OneIsomorphismBetweenTwoClosedHyperplanes hφ hχ).symm 
+        have heq2 : ∀ (u : LinearMap.ker χ), f u = g u := by
+          intro u 
+          simp only [LocalHomeomorph.coe_coe_symm, LocalHomeomorph.transHomeomorph_symm_apply,
+            ContinuousLinearEquiv.symm_toHomeomorph, ContinuousLinearEquiv.coe_toHomeomorph, Function.comp_apply]
+          unfold ModelHyperplane 
+          simp only [modelWithCornersSelf_localEquiv, LocalEquiv.refl_symm, LocalEquiv.refl_coe, id_eq]
+          generalize (OneIsomorphismBetweenTwoClosedHyperplanes hφ hχ).symm u = u  
+          have hu1 : φ (v + u.1) = 1 := by
+            rw [map_add, hv, u.2, add_zero]  
+          have hu2 : φ (v + u.1) ≠ 0 := by 
+            rw [hu1]
+            exact one_ne_zero 
+          have hu3 : v + u.1 ≠ 0 := NonzeroOfNonzeroPhi hu2  
+          unfold Chart1_LocalHomeomorph Chart1_LocalEquiv
+          simp only [Set.top_eq_univ, LocalHomeomorph.mk_coe_symm, LocalEquiv.coe_symm_mk]
+          unfold Chart2 LocalSection 
+          have hgood : φ (Projectivization.mk 𝕜 (v + u.1) hu3).rep ≠ 0 := by
+            change Projectivization.mk 𝕜 (v + u.1) hu3 ∈ Goodset φ
+            rw [←GoodsetPreimage]
+            exact hu2  
+          simp only [hgood, dite_false]
+          have h : v + u.1 = (1 / φ (v + u.1)) • (v + u.1) := by 
+            rw [hu1, div_self, one_smul]
+            exact one_ne_zero 
+          conv => rhs 
+                  rw [h]
+          apply Projectivization_vs_LinearMap_cor 
+          rw [Projectivization.mk_rep]
+        erw [contDiffOn_congr (fun u _ => heq2 u)]
+        rw [contDiffOn_univ]
+        change ContDiff 𝕜 ⊤ (_ ∘ _)  
+        refine @ContDiff.comp_continuousLinearMap 𝕜 _  (LinearMap.ker φ) _ _ E _ _ (LinearMap.ker χ) _ _ 
+           ⊤ (fun u => v + u.1) (OneIsomorphismBetweenTwoClosedHyperplanes hφ hχ).symm ?_
+        apply ContDiff.add 
+        . apply contDiff_const 
+        . exact ContinuousLinearMap.contDiff (Submodule.subtypeL (LinearMap.ker φ)) 
  
 
 /- If f is map from ℙ(E) to a manifold such that f ∘ Projectivization.mk'is smooth, we prove that f is
