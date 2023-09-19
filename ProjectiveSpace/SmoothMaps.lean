@@ -17,10 +17,11 @@ smooth maps to ℙ(E).-/
 
 -- Why can't Lean infer the ChartedSpace instance on {u : E | u ≠ 0} unless I explicitly tell it to do it ?
 
+
 lemma Smooth.quotientMap : 
 @ContMDiff 𝕜 _ E _ _ _ _ (modelWithCornersSelf 𝕜 E) {u : E | u ≠ 0} _ inferInstance
 (LinearMap.ker (Chi 𝕜 E)) _ _ _ _ (ModelHyperplane 𝕜 E) (ℙ 𝕜 E) _ _
-⊤ (Projectivization.mk' 𝕜 : {u : E | u ≠ 0} → ℙ 𝕜 E) := by
+⊤ (Projectivization.mk' 𝕜 : {u : E | u ≠ 0} → ℙ 𝕜 E) := by 
   rw [contMDiff_iff]
   constructor 
   . rw [continuous_def]
@@ -34,7 +35,7 @@ lemma Smooth.quotientMap :
     unfold ModelHyperplane
     simp only [extChartAt, LocalHomeomorph.extend, modelWithCornersSelf_localEquiv, LocalEquiv.trans_refl, ne_eq,
       Set.coe_setOf, Set.mem_setOf_eq, LocalHomeomorph.coe_coe_symm]
-    unfold chartAt ChartedSpace.chartAt ProjectiveSpace.ChartedSpace
+    unfold chartAt ChartedSpace.chartAt ProjectiveSpace.instChartedSpaceProjectiveSpace 
     simp only
     rw [ProjectiveSpace.ChartAt_source]
     apply ContDiffOn.mono (s := {u : E | φ u ≠ 0})
@@ -82,7 +83,6 @@ lemma Smooth.quotientMap :
         . apply contDiffOn_const  
   
 
-#exit 
 
 /- The Projectivization.mk' map admits local smooth sections: if we have a nonzero continuous linear form φ
 and a point x in ℙ(E) such that φ(x.rep)=1, then the map y => (1 / φ(y.rep)) • y.rep sends
@@ -90,12 +90,11 @@ Goodset φ to {φ = 1}, hence to E-{0}, and it is a section of Projectivization.
 and prove that it is smooth.-/
 
 def ProjectiveSpace.LocalSection (φ : E →L[𝕜] 𝕜) :
-ℙ 𝕜 E → Estar E := by 
+ℙ 𝕜 E → {u : E | u ≠ 0} := by 
   intro y 
   by_cases hgood : φ y.rep = 0 
   . exact Classical.choice inferInstance  
   . refine ⟨(1 / (φ y.rep)) • y.rep, ?_⟩
-    unfold Estar
     simp only [one_div, ne_eq, Set.mem_setOf_eq, smul_eq_zero, inv_eq_zero]
     rw [not_or, and_iff_right hgood]
     exact NonzeroOfNonzeroPhi hgood
@@ -114,15 +113,8 @@ Projectivization.mk' 𝕜 (ProjectiveSpace.LocalSection φ y) = y := by
   rw [smul_smul]
   simp only [ne_eq, hy, not_false_eq_true, mul_inv_cancel, one_smul]
 
-lemma NonzeroExistsEqOne {φ : E→L[𝕜] 𝕜} (hφ : φ ≠ 0) : ∃ (v : E), φ v = 1 := by 
-  match ContinuousLinearMap.exists_ne_zero hφ with
-  | ⟨u, hu⟩ => 
-    existsi (1 / φ u) • u 
-    simp only [one_div, map_smul, smul_eq_mul, ne_eq]
-    rw [mul_comm]
-    simp only [ne_eq, hu, not_false_eq_true, mul_inv_cancel]
 
-def RetractionOnHyperplane {φ : E →L[𝕜] 𝕜} (hφ : φ ≠ 0) : (Estar E) → {u : E | φ u = 1} := by 
+def RetractionOnHyperplane {φ : E →L[𝕜] 𝕜} (hφ : φ ≠ 0) : {u : E | u ≠ 0} → {u : E | φ u = 1} := by 
   intro u 
   by_cases h : φ u = 0 
   . exact ⟨Classical.choose (NonzeroExistsEqOne hφ), Classical.choose_spec (NonzeroExistsEqOne hφ)⟩
@@ -130,10 +122,10 @@ def RetractionOnHyperplane {φ : E →L[𝕜] 𝕜} (hφ : φ ≠ 0) : (Estar E)
     simp only [one_div, Set.mem_setOf_eq, map_smul, smul_eq_mul, ne_eq, h, not_false_eq_true, inv_mul_cancel]
 
 lemma RetractionOnHyperplaneIsContinuousOn {φ : E →L[𝕜] 𝕜} (hφ : φ ≠ 0) :
-ContinuousOn (RetractionOnHyperplane hφ) {u : Estar E | φ u ≠ 0} := by
+ContinuousOn (RetractionOnHyperplane hφ) {u : {u : E | u ≠ 0} | φ u.1 ≠ 0} := by
   rw [continuousOn_iff_continuous_restrict, continuous_induced_rng]
-  set f : {u : Estar E | φ u.1 ≠ 0} → E :=  fun u => (1 / φ u.1) • u.1.1
-  have heq : ∀ u, f u = (Subtype.val ∘ Set.restrict {u : Estar E| φ u.1 ≠ 0} (RetractionOnHyperplane hφ)) u := by
+  set f : {u : {u : E | u ≠ 0} | φ u.1 ≠ 0} → E :=  fun u => (1 / φ u.1) • u.1.1
+  have heq : ∀ u, f u = (Subtype.val ∘ Set.restrict {u : {u : E | u ≠ 0} | φ u.1 ≠ 0} (RetractionOnHyperplane hφ)) u := by
     intro u
     simp only [ne_eq, Set.coe_setOf, Set.mem_setOf_eq, Function.comp_apply, Set.restrict_apply] 
     unfold RetractionOnHyperplane
@@ -163,7 +155,7 @@ ContinuousOn (RetractionOnHyperplane hφ) {u : Estar E | φ u ≠ 0} := by
     · apply continuous_induced_dom
     · apply continuous_induced_dom
 
-def InclusionHyperplane (φ : E →L[𝕜] 𝕜) : {u : E | φ u = 1} → Estar E := by
+def InclusionHyperplane (φ : E →L[𝕜] 𝕜) : {u : E | φ u = 1} → {u : E | u ≠ 0} := by
   intro ⟨u, hu⟩
   refine ⟨u, ?_⟩
   change u ≠ 0
@@ -210,127 +202,104 @@ ContinuousOn (ProjectiveSpace.LocalSection φ) (Goodset φ) := by
     (IsOpen.preimage (InclusionHyperplaneIsContinuous φ) hU)
   apply NonzeroPhiIsOpen'
 
+
 lemma ProjectiveSpace.LocalSection_IsSmoothOn (φ : E →L[𝕜] 𝕜) :
-@ContMDiffOn 𝕜 _ (LinearMap.ker χ) _ _ (LinearMap.ker χ) _ ModelHyperplane (ℙ 𝕜 E) _ 
-(ChartedSpaceProjectiveSpace hχ hsep) E _ _ E _ (modelWithCornersSelf 𝕜 E) (Estar E) _ _ ⊤
-(ProjectiveSpace.LocalSection φ) (Goodset φ) := by 
-  set CS := ChartedSpaceProjectiveSpace hχ hsep
-  set SM := ProjectiveSpace_SmoothManifold hχ hsep 
+ContMDiffOn (ModelHyperplane 𝕜 E) (modelWithCornersSelf 𝕜 E) ⊤ (ProjectiveSpace.LocalSection φ) (Goodset φ) := by 
   by_cases hφ : φ = 0 
   . rw [GoodsetZero hφ]
     apply contMDiffOn_of_locally_contMDiffOn
     simp only [Set.mem_empty_iff_false, Set.empty_inter, IsEmpty.forall_iff, implies_true]
-  . have hφ' : ∃ (v : E), φ v = 1 := by 
-      match ContinuousLinearMap.exists_ne_zero hφ with 
-      | ⟨w, hw⟩ =>
-        existsi (1 / (φ w)) • w 
-        simp only [one_div, map_smul, smul_eq_mul, ne_eq]
-        simp only [ne_eq, hw, not_false_eq_true, inv_mul_cancel]
-    match hφ' with 
-    | ⟨v, hv⟩ =>
+  . match NonzeroExistsEqOne hφ with
+    | ⟨v, hv⟩ => 
       have hv' : φ v ≠ 0 := by rw [hv]; exact one_ne_zero
       set x := Projectivization.mk 𝕜 v (NonzeroOfNonzeroPhi hv')
       set y := x.rep
-      rw [@contMDiffOn_iff_of_mem_maximalAtlas 𝕜 _ (LinearMap.ker χ) _ _ _ _ ModelHyperplane (ℙ 𝕜 E) _
-        CS SM E _ _ _ _ (modelWithCornersSelf 𝕜 E) (Estar E) _ _ _ (LocalHomeomorph.transHomeomorph 
-        (Chart1_LocalHomeomorph hv) (ContinuousLinearEquiv.toHomeomorph
-        (OneIsomorphismBetweenTwoClosedHyperplanes (NonzeroPhiOfPhiEqOne hv) hχ))) 
-        (OpenEmbedding.toLocalHomeomorph (fun u => u.1) (EstarToE E)) (ProjectiveSpace.LocalSection φ)
-        (Goodset φ) ⊤ 
-        (by apply SmoothManifoldWithCorners.subset_maximalAtlas 
-            change _ ∈ @atlas (LinearMap.ker χ) _ (ℙ 𝕜 E) _ (ChartedSpaceProjectiveSpace hχ hsep) 
-            change _ ∈  {f | ∃ (φ : E →L[𝕜] 𝕜) (v : E) (hv : φ v = 1), f = LocalHomeomorph.transHomeomorph 
-              (Chart1_LocalHomeomorph hv) (ContinuousLinearEquiv.toHomeomorph
-              (OneIsomorphismBetweenTwoClosedHyperplanes (NonzeroPhiOfPhiEqOne hv) hχ))}
-            simp only [Set.mem_setOf_eq]
-            existsi φ; existsi v; existsi hv
-            rfl)
-        (by apply SmoothManifoldWithCorners.subset_maximalAtlas 
-            change _ ∈ {(OpenEmbedding.toLocalHomeomorph (fun u => u.1) (EstarToE E))}
-            simp only [Set.mem_singleton_iff])
+      rw [contMDiffOn_iff_of_mem_maximalAtlas
+      (e := (LocalHomeomorph.transHomeomorph 
+        (Chart_LocalHomeomorph hv) (ContinuousLinearEquiv.toHomeomorph
+        (OneIsomorphismBetweenTwoClosedHyperplanes (NonzeroPhiOfPhiEqOne hv) (hChi 𝕜 E)))))
+      (e' := (OpenEmbedding.toLocalHomeomorph (fun u => u.1) EstarToE))
+      (by apply SmoothManifoldWithCorners.subset_maximalAtlas 
+          change _ ∈ @atlas (LinearMap.ker (Chi 𝕜 E)) _ (ℙ 𝕜 E) _ _ 
+          change _ ∈  {f | ∃ (φ : E →L[𝕜] 𝕜) (v : E) (hv : φ v = 1), f = LocalHomeomorph.transHomeomorph 
+              (Chart_LocalHomeomorph hv) (ContinuousLinearEquiv.toHomeomorph
+              (OneIsomorphismBetweenTwoClosedHyperplanes (NonzeroPhiOfPhiEqOne hv) (hChi 𝕜 E)))}
+          simp only [Set.mem_setOf_eq]
+          existsi φ; existsi v; existsi hv
+          rfl)
+       (by apply SmoothManifoldWithCorners.subset_maximalAtlas 
+           change _ ∈ {(OpenEmbedding.toLocalHomeomorph (fun u => u.1) EstarToE)}
+           simp only [Set.mem_singleton_iff])
         (by rw [ProjectiveSpace.Chart_source])
         (by simp only [OpenEmbedding.toLocalHomeomorph_source]
             apply Set.mapsTo_univ)]
       constructor
-      . exact ProjectiveSpace.LocalSection_IsContinuousOn hφ 
-      . have heq1 : (↑(LocalHomeomorph.extend (LocalHomeomorph.transHomeomorph (Chart1_LocalHomeomorph hv)
-          (ContinuousLinearEquiv.toHomeomorph (OneIsomorphismBetweenTwoClosedHyperplanes hφ hχ)))
-          ModelHyperplane) '' Goodset φ) = ⊤ := by
-          ext  u
-          simp only [LocalHomeomorph.extend, LocalEquiv.coe_trans, ModelWithCorners.toLocalEquiv_coe,
-            LocalHomeomorph.toFun_eq_coe, LocalHomeomorph.transHomeomorph_apply, ContinuousLinearEquiv.coe_toHomeomorph,
-            Function.comp_apply, Set.mem_image, Set.top_eq_univ, Set.mem_univ, iff_true]
-          set w := v + ((OneIsomorphismBetweenTwoClosedHyperplanes hφ hχ).symm u).1 
-          existsi Chart2 hv ((OneIsomorphismBetweenTwoClosedHyperplanes hφ hχ).symm u) 
-          rw [and_iff_right (Chart2_CodomainGoodset hv _)]
-          unfold Chart1_LocalHomeomorph Chart1_LocalEquiv
-          simp only [Set.top_eq_univ, LocalHomeomorph.mk_coe]
-          rw [Chart1Chart2]
-          simp only [ContinuousLinearEquiv.apply_symm_apply]
-          unfold ModelHyperplane 
-          simp only [modelWithCornersSelf_coe, id_eq]
-        rw [heq1]
-        simp only [LocalHomeomorph.extend, modelWithCornersSelf_localEquiv, LocalEquiv.trans_refl,
-          LocalHomeomorph.toFun_eq_coe, OpenEmbedding.toLocalHomeomorph_apply, LocalEquiv.coe_trans_symm,
-          Set.top_eq_univ]
-        set f := ((fun u => ↑u) ∘ LocalSection φ ∘ ↑(LocalEquiv.symm (LocalHomeomorph.transHomeomorph 
-          (Chart1_LocalHomeomorph hv) (ContinuousLinearEquiv.toHomeomorph
-          (OneIsomorphismBetweenTwoClosedHyperplanes hφ hχ))).toLocalEquiv) ∘
-          ↑(LocalEquiv.symm ModelHyperplane.toLocalEquiv))
-        set g : LinearMap.ker χ → E := (fun u => v + u.1) ∘ (OneIsomorphismBetweenTwoClosedHyperplanes hφ hχ).symm 
-        have heq2 : ∀ (u : LinearMap.ker χ), f u = g u := by
-          intro u 
-          simp only [LocalHomeomorph.coe_coe_symm, LocalHomeomorph.transHomeomorph_symm_apply,
-            ContinuousLinearEquiv.symm_toHomeomorph, ContinuousLinearEquiv.coe_toHomeomorph, Function.comp_apply]
-          unfold ModelHyperplane 
-          simp only [modelWithCornersSelf_localEquiv, LocalEquiv.refl_symm, LocalEquiv.refl_coe, id_eq]
-          generalize (OneIsomorphismBetweenTwoClosedHyperplanes hφ hχ).symm u = u  
-          have hu1 : φ (v + u.1) = 1 := by
-            rw [map_add, hv, u.2, add_zero]  
-          have hu2 : φ (v + u.1) ≠ 0 := by 
-            rw [hu1]
-            exact one_ne_zero 
-          have hu3 : v + u.1 ≠ 0 := NonzeroOfNonzeroPhi hu2  
-          unfold Chart1_LocalHomeomorph Chart1_LocalEquiv
-          simp only [Set.top_eq_univ, LocalHomeomorph.mk_coe_symm, LocalEquiv.coe_symm_mk]
-          unfold Chart2 LocalSection 
-          have hgood : φ (Projectivization.mk 𝕜 (v + u.1) hu3).rep ≠ 0 := by
-            change Projectivization.mk 𝕜 (v + u.1) hu3 ∈ Goodset φ
-            rw [←GoodsetPreimage]
-            exact hu2  
-          simp only [hgood, dite_false]
-          have h : v + u.1 = (1 / φ (v + u.1)) • (v + u.1) := by 
-            rw [hu1, div_self, one_smul]
-            exact one_ne_zero 
-          conv => rhs 
-                  rw [h]
-          apply Projectivization_vs_LinearMap_cor 
-          rw [Projectivization.mk_rep]
-        erw [contDiffOn_congr (fun u _ => heq2 u)]
-        rw [contDiffOn_univ]
-        change ContDiff 𝕜 ⊤ (_ ∘ _)  
-        refine @ContDiff.comp_continuousLinearMap 𝕜 _  (LinearMap.ker φ) _ _ E _ _ (LinearMap.ker χ) _ _ 
-           ⊤ (fun u => v + u.1) (OneIsomorphismBetweenTwoClosedHyperplanes hφ hχ).symm ?_
-        apply ContDiff.add 
-        . apply contDiff_const 
-        . exact ContinuousLinearMap.contDiff (Submodule.subtypeL (LinearMap.ker φ)) 
+      . exact ProjectiveSpace.LocalSection_IsContinuousOn hφ
+      . apply ContDiffOn.mono (s := ⊤)
+        swap
+        . simp only [LocalHomeomorph.extend, ne_eq, LocalEquiv.coe_trans, ModelWithCorners.toLocalEquiv_coe,
+          LocalHomeomorph.toFun_eq_coe, LocalHomeomorph.transHomeomorph_apply, ContinuousLinearEquiv.coe_toHomeomorph,
+          Function.comp_apply, Set.top_eq_univ, Set.subset_univ]
+        . set f : LinearMap.ker (Chi 𝕜 E) → E := (fun u => v + u.1) ∘ 
+            (OneIsomorphismBetweenTwoClosedHyperplanes hφ (hChi 𝕜 E)).symm 
+          apply ContDiffOn.congr (f := f)
+          swap
+          . intro u _ 
+            simp only [ne_eq, Set.coe_setOf, LocalHomeomorph.extend, Set.mem_setOf_eq, modelWithCornersSelf_localEquiv,
+              LocalEquiv.trans_refl, LocalHomeomorph.toFun_eq_coe, LocalEquiv.coe_trans_symm,
+              LocalHomeomorph.coe_coe_symm, LocalHomeomorph.transHomeomorph_symm_apply,
+              ContinuousLinearEquiv.symm_toHomeomorph, ContinuousLinearEquiv.coe_toHomeomorph,
+              ModelWithCorners.toLocalEquiv_coe_symm, Function.comp_apply]  
+            unfold ModelHyperplane
+            simp only [ne_eq, Set.coe_setOf, Set.mem_setOf_eq, modelWithCornersSelf_coe_symm, id_eq]    
+            generalize (OneIsomorphismBetweenTwoClosedHyperplanes hφ (hChi 𝕜 E)).symm u = u  
+            have hu1 : φ (v + u.1) = 1 := by
+              rw [map_add, hv, u.2, add_zero]  
+            have hu2 : φ (v + u.1) ≠ 0 := by 
+              rw [hu1]
+              exact one_ne_zero 
+            have hu3 : v + u.1 ≠ 0 := NonzeroOfNonzeroPhi hu2  
+            unfold Chart_LocalHomeomorph Chart_LocalEquiv
+            simp only [ne_eq, Set.coe_setOf, Set.mem_setOf_eq, Set.top_eq_univ, LocalHomeomorph.mk_coe_symm,
+              LocalEquiv.coe_symm_mk]            
+            unfold InverseChart LocalSection
+            have hgood : φ (Projectivization.mk 𝕜 (v + u.1) hu3).rep ≠ 0 := by
+              change Projectivization.mk 𝕜 (v + u.1) hu3 ∈ Goodset φ
+              rw [←GoodsetPreimage]
+              exact hu2             
+            simp only [ne_eq, Set.coe_setOf, Set.mem_setOf_eq, hgood, one_div, dite_false]    
+            erw [OpenEmbedding.toLocalHomeomorph_apply (fun u : {u : E | u ≠ 0} => u.1) EstarToE]
+            simp only
+            rw [←one_div]
+            have h : v + u.1 = (1 / φ (v + u.1)) • (v + u.1) := by 
+              rw [hu1, div_self, one_smul]
+              exact one_ne_zero 
+            conv => rhs 
+                    rw [h]
+            apply Projectivization_vs_LinearMap_cor 
+            rw [Projectivization.mk_rep]
+          . rw [Set.top_eq_univ, contDiffOn_univ]
+            change ContDiff 𝕜 ⊤ (_ ∘ _)
+            refine @ContDiff.comp_continuousLinearMap 𝕜 _ (LinearMap.ker φ) _ _ E _ _
+              (LinearMap.ker (Chi 𝕜 E)) _ _ ⊤ (fun u => v + u.1) 
+              (OneIsomorphismBetweenTwoClosedHyperplanes hφ (hChi 𝕜 E)).symm ?_
+            apply ContDiff.add
+            . apply contDiff_const
+            . exact ContinuousLinearMap.contDiff (Submodule.subtypeL (LinearMap.ker φ)) 
  
-
 /- If f is map from ℙ(E) to a manifold such that f ∘ Projectivization.mk'is smooth, we prove that f is
 smooth. This is useful to construct smooth maps from ℙ(E).-/
 
 lemma Smooth.mapFromProjectiveSpace {F : Type u} [NormedAddCommGroup F] [NormedSpace 𝕜 F] {H : Type u}
 [TopologicalSpace H] {I : ModelWithCorners 𝕜 F H} {M : Type u} [TopologicalSpace M] [ChartedSpace H M]
 [SmoothManifoldWithCorners I M] {f : ℙ 𝕜 E → M} 
-(hf : ContMDiff (modelWithCornersSelf 𝕜 E) I ⊤ (f ∘ (Projectivization.mk' 𝕜) : (Estar E) → M)) :
-@ContMDiff 𝕜 _ (LinearMap.ker χ) _ _ (LinearMap.ker χ) _ ModelHyperplane (ℙ 𝕜 E) _ 
-(ChartedSpaceProjectiveSpace hχ hsep) F _ _ H _ I M _ _ ⊤ f := by 
-  set CS := ChartedSpaceProjectiveSpace hχ hsep
-  set SM := ProjectiveSpace_SmoothManifold hχ hsep 
+(hf : ContMDiff (modelWithCornersSelf 𝕜 E) I ⊤ (f ∘ (Projectivization.mk' 𝕜) : {u : E | u ≠ 0} → M)) :
+@ContMDiff 𝕜 _ (LinearMap.ker (Chi 𝕜 E)) _ _ (LinearMap.ker (Chi 𝕜 E)) _ (ModelHyperplane 𝕜 E) (ℙ 𝕜 E) _ 
+_ F _ _ H _ I M _ _ ⊤ f := by 
   apply contMDiff_of_locally_contMDiffOn
   intro x 
-  set φ := (Classical.choose (hsep.exists_eq_one (Projectivization.rep_nonzero x)))
-  set hφ := (Classical.choose_spec (hsep.exists_eq_one (Projectivization.rep_nonzero x)))
+  set φ := PhiForChart x 
+  set hφ := PhiForChart_prop x 
   exists Goodset φ
   rw [and_iff_right (GoodsetIsOpen φ)]
   constructor 
@@ -346,11 +315,12 @@ lemma Smooth.mapFromProjectiveSpace {F : Type u} [NormedAddCommGroup F] [NormedS
       exact hy
     refine ContMDiffOn.congr ?_ heq  
     rw [hgdef, ←Function.comp.assoc]
-    refine @ContMDiffOn.comp 𝕜 _ (LinearMap.ker χ) _ _ (LinearMap.ker χ) _ ModelHyperplane (ℙ 𝕜 E) _
-      (ChartedSpaceProjectiveSpace hχ hsep) E _ _ E _ (modelWithCornersSelf 𝕜 E) (Estar E) _ _ 
+    refine @ContMDiffOn.comp 𝕜 _ (LinearMap.ker (Chi 𝕜 E)) _ _ (LinearMap.ker (Chi 𝕜 E)) _ 
+      (ModelHyperplane 𝕜 E) (ℙ 𝕜 E) _ _ E _ _ E _ (modelWithCornersSelf 𝕜 E) 
+      {u : E | u ≠ 0} _ _ 
       F _ _ H _ I M _ _ (ProjectiveSpace.LocalSection φ) (Goodset φ) ⊤ ⊤ 
       (f ∘ (Projectivization.mk' 𝕜)) (ContMDiff.contMDiffOn (s := ⊤) hf) ?_ ?_
-    . exact @ProjectiveSpace.LocalSection_IsSmoothOn 𝕜 E _ _ _ _ hsep χ hχ _ φ  
+    . exact ProjectiveSpace.LocalSection_IsSmoothOn φ  
     . simp only [Set.top_eq_univ, Set.preimage_univ, Set.subset_univ]
 
 
@@ -361,21 +331,17 @@ lemma Smooth.mapFromProductProjectiveSpace {F G : Type u} [NormedAddCommGroup F]
 [SmoothManifoldWithCorners I' N] 
 {f : N × ℙ 𝕜 E → M} 
 (hf : ContMDiff (ModelWithCorners.prod I' (modelWithCornersSelf 𝕜 E)) I ⊤ 
-(f ∘ (Prod.map (fun x => x) (Projectivization.mk' 𝕜)) : N × (Estar E) → M)) :
-@ContMDiff 𝕜 _ (G × (LinearMap.ker χ)) _ _ (H' × (LinearMap.ker χ)) _ 
-(ModelWithCorners.prod I' hModelHyperplane) (N × (ℙ 𝕜 E)) _ 
-(@prodChartedSpace H' _ N _ _ (LinearMap.ker χ) _ (ℙ 𝕜 E) _ (ChartedSpaceProjectiveSpace hχ hsep)) 
+(f ∘ (Prod.map (fun x => x) (Projectivization.mk' 𝕜)) : N × {u : E | u ≠ 0} → M)) :
+@ContMDiff 𝕜 _ (G × (LinearMap.ker (Chi 𝕜 E))) _ _ (H' × (LinearMap.ker (Chi 𝕜 E))) _ 
+(ModelWithCorners.prod I' (ModelHyperplane 𝕜 E)) (N × (ℙ 𝕜 E)) _ 
+(@prodChartedSpace H' _ N _ _ (LinearMap.ker (Chi 𝕜 E)) _ (ℙ 𝕜 E) _ _) 
 F _ _ H _ I M _ _ ⊤ f := by 
-  set CS := ChartedSpaceProjectiveSpace hχ hsep
-  set SM := ProjectiveSpace_SmoothManifold hχ hsep
-  set CSprod :=  @prodChartedSpace H' _ N _ _ (LinearMap.ker χ) _ (ℙ 𝕜 E) _ CS
-  set SMProd := @SmoothManifoldWithCorners.prod 𝕜 _ G _ _ (LinearMap.ker χ) _ _ H' _ I' (LinearMap.ker χ) _
-    ModelHyperplane N _ _ _ (ℙ 𝕜 E) _ CS SM 
-  apply @contMDiff_of_locally_contMDiffOn 𝕜 _ (G × (LinearMap.ker χ)) _ _ (H' × (LinearMap.ker χ)) _
-    (ModelWithCorners.prod I' hModelHyperplane) (N × (ℙ 𝕜 E)) _ CSprod 
+  apply @contMDiff_of_locally_contMDiffOn 𝕜 _ (G × (LinearMap.ker (Chi 𝕜 E))) _ _ (H' × (LinearMap.ker (Chi 𝕜 E))) _
+    (ModelWithCorners.prod I' (ModelHyperplane 𝕜 E)) (N × (ℙ 𝕜 E)) _ 
+    (prodChartedSpace H' N (LinearMap.ker (Chi 𝕜 E)) (ℙ 𝕜 E)) 
   intro x 
-  set φ := (Classical.choose (hsep.exists_eq_one (Projectivization.rep_nonzero x.2)))
-  set hφ := (Classical.choose_spec (hsep.exists_eq_one (Projectivization.rep_nonzero x.2)))
+  set φ := PhiForChart x.2
+  set hφ := PhiForChart_prop x.2 
   existsi ⊤ ×ˢ (Goodset φ) 
   constructor 
   . apply IsOpen.prod 
@@ -390,25 +356,28 @@ F _ _ H _ I M _ _ ⊤ f := by
     . set g : N × ℙ 𝕜 E → M := f ∘ (Prod.map (fun x => x) 
         (Projectivization.mk' 𝕜)) ∘ (Prod.map (fun x => x) (ProjectiveSpace.LocalSection φ)) with hgdef
       have heq : ∀ (y : N × ℙ 𝕜 E), y ∈ ⊤ ×ˢ (Goodset φ) → f y = g y := by sorry
-      refine @ContMDiffOn.congr 𝕜 _ (G × (LinearMap.ker χ)) _ _ (H' × (LinearMap.ker χ)) _
-        (ModelWithCorners.prod I' hModelHyperplane) (N × (ℙ 𝕜 E)) _ CSprod F _ _ H _ I M
+      refine @ContMDiffOn.congr 𝕜 _ (G × (LinearMap.ker (Chi 𝕜 E))) _ _ (H' × (LinearMap.ker (Chi 𝕜 E))) _
+        (ModelWithCorners.prod I' (ModelHyperplane 𝕜 E)) (N × (ℙ 𝕜 E)) _ 
+        (prodChartedSpace H' N (LinearMap.ker (Chi 𝕜 E)) (ℙ 𝕜 E)) F _ _ H _ I M
         _ _ g f (⊤ ×ˢ (Goodset φ)) ⊤ ?_ heq  
       rw [hgdef, ←Function.comp.assoc]
       have hf' := @ContMDiff.contMDiffOn 𝕜 _ (G × E) _ _ (H' × E) _ (ModelWithCorners.prod I'
-        (modelWithCornersSelf 𝕜 E)) (N × (Estar E)) _ (@prodChartedSpace H' _ N _ _ E _ (Estar E) _ _)
+        (modelWithCornersSelf 𝕜 E)) (N × {u : E | u ≠ 0}) _ 
+        (@prodChartedSpace H' _ N _ _ E _ {u : E | u ≠ 0} _ _)
         F _ _ H _ I M _ _ _ ⊤ ⊤ hf 
-      refine @ContMDiffOn.comp 𝕜 _ (G × (LinearMap.ker χ)) _ _ (H' × (LinearMap.ker χ)) _
-        (ModelWithCorners.prod I' hModelHyperplane) (N × (ℙ 𝕜 E)) _ CSprod (G × E) _ _ (H' × E) _
-        (ModelWithCorners.prod I' (modelWithCornersSelf 𝕜 E)) (N × (Estar E)) _ 
-        (@prodChartedSpace H' _ N _ _ E _ (Estar E) _ _) F _ _ H _ I M _ _ 
+      refine @ContMDiffOn.comp 𝕜 _ (G × (LinearMap.ker (Chi 𝕜 E))) _ _ (H' × (LinearMap.ker (Chi 𝕜 E))) _
+        (ModelWithCorners.prod I' (ModelHyperplane 𝕜 E)) (N × (ℙ 𝕜 E)) _ 
+        (prodChartedSpace H' N (LinearMap.ker (Chi 𝕜 E)) (ℙ 𝕜 E)) (G × E) _ _ (H' × E) _
+        (ModelWithCorners.prod I' (modelWithCornersSelf 𝕜 E)) (N × {u : E | u ≠ 0}) _ 
+        (@prodChartedSpace H' _ N _ _ E _ {u : E | u ≠ 0} _ _) F _ _ H _ I M _ _ 
         (Prod.map (fun x => x) (ProjectiveSpace.LocalSection φ)) (⊤ ×ˢ (Goodset φ)) ⊤ ⊤ _ 
         hf' ?_ ?_
       . refine @ContMDiffOn.prod_map 𝕜 _ G _ _ H' _ I' N _ _ G _ _ H' _ I' N _ _ 
-          (LinearMap.ker χ) _ _ (LinearMap.ker χ) _ ModelHyperplane (ℙ 𝕜 E) _ CS 
-          E _ _ E _ (modelWithCornersSelf 𝕜 E) (Estar E) _ _ (fun x => x) ⊤ ⊤ 
+          (LinearMap.ker (Chi 𝕜 E)) _ _ (LinearMap.ker (Chi 𝕜 E)) _ (ModelHyperplane 𝕜 E) (ℙ 𝕜 E) _ _ 
+          E _ _ E _ (modelWithCornersSelf 𝕜 E) {u : E | u ≠ 0} _ _ (fun x => x) ⊤ ⊤ 
           (ProjectiveSpace.LocalSection φ) (Goodset φ) ?_ ?_   
         . exact contMDiffOn_id 
-        . exact @ProjectiveSpace.LocalSection_IsSmoothOn 𝕜 E _ _ _ _ hsep χ hχ _ φ  
+        . exact ProjectiveSpace.LocalSection_IsSmoothOn φ  
       . simp only [Set.top_eq_univ, Set.preimage_univ, Set.subset_univ]
 
 

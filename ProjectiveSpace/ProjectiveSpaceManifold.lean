@@ -89,7 +89,7 @@ x ∈ (LocalHomeomorph.transHomeomorph (Chart_LocalHomeomorph hx)
   exact one_ne_zero 
 
 
-instance ChartedSpace : ChartedSpace (LinearMap.ker (Chi 𝕜 E)) (ℙ 𝕜 E) := 
+instance instChartedSpaceProjectiveSpace : ChartedSpace (LinearMap.ker (Chi 𝕜 E)) (ℙ 𝕜 E) := 
 {
   atlas := {f | ∃ (φ : E →L[𝕜] 𝕜) (v : E) (hv : φ v = 1), f = LocalHomeomorph.transHomeomorph 
     (Chart_LocalHomeomorph hv) (ContinuousLinearEquiv.toHomeomorph

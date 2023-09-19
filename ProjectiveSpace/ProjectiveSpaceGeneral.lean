@@ -48,7 +48,9 @@ lemma Estar.chartAt.target (u : {u : E | u ≠ 0}) :
     
 
 lemma Estar.chartAt.inverse (u : {u : E | u ≠ 0}) {v : E} (hv : v ≠ 0) :
-v = (instChartedSpaceEstar.chartAt u).symm v := by sorry
+v = (instChartedSpaceEstar.chartAt u).symm v := by 
+  rw [Estar.chartAt]
+  exact OpenEmbeddingEstar.inverse hv 
 
 instance : SmoothManifoldWithCorners (modelWithCornersSelf 𝕜 E) {u : E | u ≠ 0} :=
   EstarToE.singleton_smoothManifoldWithCorners (modelWithCornersSelf 𝕜 E) 
@@ -69,6 +71,13 @@ lemma NonzeroPhiOfPhiEqOne {φ : E →L[𝕜] 𝕜} {v : E} (hv : φ v = 1) : φ
   rw [habs] at hv 
   simp only [ContinuousLinearMap.zero_apply, zero_ne_one] at hv  
 
+lemma NonzeroExistsEqOne {φ : E→L[𝕜] 𝕜} (hφ : φ ≠ 0) : ∃ (v : E), φ v = 1 := by 
+  match ContinuousLinearMap.exists_ne_zero hφ with
+  | ⟨u, hu⟩ => 
+    existsi (1 / φ u) • u 
+    simp only [one_div, map_smul, smul_eq_mul, ne_eq]
+    rw [mul_comm]
+    simp only [ne_eq, hu, not_false_eq_true, mul_inv_cancel]
 
 lemma Projectivization_vs_LinearMap {F : Type u} [AddCommMonoid F] [Module 𝕜 F] (φ : E →ₗ[𝕜] 𝕜) {u v : E} 
 (hu : u ≠ 0) (hv : v ≠ 0) (f : E →ₗ[𝕜] F)
