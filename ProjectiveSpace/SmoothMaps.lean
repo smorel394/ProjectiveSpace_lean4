@@ -370,30 +370,37 @@ ContMDiff (ModelWithCorners.prod I' (ModelHyperplane 𝕜 E)) I ⊤ f := by
 
 /- We define the action of GL(E) on ℙ(E) and prove that it is a smooth action.-/
 
+
+lemma ActionGL_aux (f : (E →L[𝕜] E)ˣ) {u : E} (hu : u ≠ 0) : f.1 u ≠ 0 := by
+  set g := ContinuousLinearEquiv.ofUnit f 
+  change g u ≠ 0
+  simp only [ne_eq, AddEquivClass.map_eq_zero_iff]
+  exact hu 
+
 variable (𝕜 E)
 
-def ActionGL : (E →L[𝕜] E)ˣ × (ℙ 𝕜 E) → (ℙ 𝕜 E) := by 
-  intro ⟨g, x⟩
-  refine Projectivization.mk 𝕜 (g.1 x.rep) ?_ 
-  set h := ContinuousLinearEquiv.ofUnit g 
-  change h x.rep ≠ 0 
-  simp only [ne_eq, AddEquivClass.map_eq_zero_iff]
-  exact Projectivization.rep_nonzero _ 
-
+def ActionGL : (E →L[𝕜] E)ˣ × (ℙ 𝕜 E) → (ℙ 𝕜 E) := 
+fun ⟨g, x⟩ => Projectivization.mk 𝕜 (g.1 x.rep) (ActionGL_aux g (Projectivization.rep_nonzero _))  
+  
 /- We lift this action to E-{0}.-/
 
 def ActionGLLift : (E →L[𝕜] E)ˣ × {u : E // u ≠ 0} → {u : E // u ≠ 0} := by 
   intro ⟨g, u⟩
-  refine ⟨g.1 u.1, ?_⟩
-  set h := ContinuousLinearEquiv.ofUnit g 
-  change h u.1 ≠ 0 
-  simp only [ne_eq, AddEquivClass.map_eq_zero_iff]
-  exact u.2
+  refine ⟨g.1 u.1, ActionGL_aux g u.2⟩ 
 
 /- We prove that the left is a lift.-/
 
 lemma ActionGLLift_IsLift : 
-(ActionGL 𝕜 E ∘ Prod.map (fun x => x) (Projectivization.mk' 𝕜)) = Projectivization.mk' 𝕜 ∘ ActionGLLift 𝕜 E := sorry
+(ActionGL 𝕜 E ∘ Prod.map (fun x => x) (Projectivization.mk' 𝕜)) = Projectivization.mk' 𝕜 ∘ ActionGLLift 𝕜 E := by
+  ext ⟨g, u⟩
+  unfold ActionGL ActionGLLift
+  simp only [ne_eq, Function.comp_apply, Prod_map, Projectivization.mk'_eq_mk]
+  rw [Projectivization.mk_eq_mk_iff]
+  have heq := Projectivization.mk_rep (Projectivization.mk 𝕜 u.1 u.2)
+  rw [Projectivization.mk_eq_mk_iff] at heq 
+  match heq with
+  | ⟨a, ha⟩ => 
+     
 
 def ActionGLLift_extended : ((E →L[𝕜] E) × E) → E := fun ⟨T, u⟩ => T u 
 
@@ -425,8 +432,17 @@ lemma ActionGLLift_IsSmooth : ContMDiff (ModelWithCorners.prod (modelWithCorners
     ext u 
     unfold ActionGLLift ActionGLLift_extended 
     simp only [ne_eq, LocalHomeomorph.prod_apply, OpenEmbedding.toLocalHomeomorph_apply, Function.comp_apply]
-    erw [LocalHomeomorph.eq_symm_apply]
-    --rw [OpenEmbedding.toLocalHomeomorph_apply]
+    have hnz : u.1.1 u.2 ≠ 0 := ActionGL_aux u.1 u.2.2 
+    have h : u.1.1 u.2 = (⟨u.1.1 u.2, hnz⟩ : {u : E | u ≠ 0}).1 := by simp only 
+    rw [h, SetCoe.ext_iff, LocalHomeomorph.eq_symm_apply]
+    haveI : Nonempty {u : E | u ≠ 0} := by 
+      have hne : Nonempty {u : E // u ≠ 0} := inferInstance
+      exact hne
+    rw [OpenEmbedding.toLocalHomeomorph_apply]
+    simp only [ne_eq, Set.coe_setOf, Set.mem_setOf_eq, OpenEmbedding.toLocalHomeomorph_source, Set.mem_univ]
+    simp only [ne_eq, Set.coe_setOf, OpenEmbedding.toLocalHomeomorph_target, Subtype.range_coe_subtype,
+      Set.mem_setOf_eq]
+    exact hnz 
   rw [heq]
   rw [←contMDiffOn_univ]
   apply ContMDiffOn.comp (I' := modelWithCornersSelf 𝕜 E) (t := {u : E | u ≠ 0})
@@ -457,10 +473,9 @@ lemma ActionGLLift_IsSmooth : ContMDiff (ModelWithCorners.prod (modelWithCorners
     simp only [LocalHomeomorph.prod_apply, OpenEmbedding.toLocalHomeomorph_apply, Set.preimage_setOf_eq,
       Function.comp_apply, Set.mem_setOf_eq]
     unfold ActionGLLift_extended 
-    simp only 
-    set T := ContinuousLinearEquiv.ofUnit u.1 
-    change T u.2 ≠ 0
-    simp only [ne_eq, AddEquivClass.map_eq_zero_iff, u.2.2, not_false_eq_true] 
+    simp only
+    exact ActionGL_aux u.1 u.2.2
+  
 
 /- Smoothness of the action.-/
 
