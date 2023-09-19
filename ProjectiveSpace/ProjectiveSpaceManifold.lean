@@ -5,7 +5,6 @@ noncomputable section
 
 universe u 
 
-/- Manifold structure on E-{0}.-/
 
 variable (𝕜 E : Type u) [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [CompleteSpace 𝕜]
@@ -18,11 +17,11 @@ have that linear form as a parameter in our instance, so we will use a choice fu
 after we put a Nonempty instance on E-{0} and a SeperatingDual instance on E. We need the
 SeparatingDual instance anyway to prove that every point of ℙ(E) is in the domain of a chart.-/
 
-variable [Nonempty {u : E | u ≠ 0}] [SeparatingDual 𝕜 E]
+variable [Nonempty {u : E // u ≠ 0}] [SeparatingDual 𝕜 E]
 
 
 lemma ExistsNonzeroContinuousLinearForm : ∃ (χ : E →L[𝕜] 𝕜), χ ≠ 0 := by 
-  set v : {u : E | u ≠ 0} := Classical.choice inferInstance 
+  set v : {u : E // u ≠ 0} := Classical.choice inferInstance 
   existsi Classical.choose (SeparatingDual.exists_ne_zero v.2)
   by_contra habs 
   apply_fun (fun φ => φ v.1) at habs 

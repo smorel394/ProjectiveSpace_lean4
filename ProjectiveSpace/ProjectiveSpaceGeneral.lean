@@ -16,7 +16,7 @@ variable {k E : Type u} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [N
 lemma EstarIsOpen:  IsOpen {u : E | u ≠ 0} :=
 isOpen_compl_iff.mpr (isClosed_singleton)
 
-def EstarToE : OpenEmbedding (fun (u : {u : E | u ≠ 0}) => (u : E)) :=
+def EstarToE : OpenEmbedding (fun (u : {u : E // u ≠ 0}) => (u : E)) :=
 {
   induced := by tauto
   inj := by intro u v; rw [SetCoe.ext_iff]; simp only [imp_self]
@@ -24,35 +24,35 @@ def EstarToE : OpenEmbedding (fun (u : {u : E | u ≠ 0}) => (u : E)) :=
                    exact EstarIsOpen
 }
 
-variable [Nonempty {u : E | u ≠ 0}]
+variable [Nonempty {u : E // u ≠ 0}]
 
 
 lemma OpenEmbeddingEstar.inverse {u : E} (hu : u ≠ 0) :
 u = (OpenEmbedding.toLocalHomeomorph (fun u => u.1) (EstarToE)).symm u := by 
-  have heq : u = (fun u=> u.1) (⟨u, hu⟩ : {u : E | u ≠ 0}) := by simp only 
+  have heq : u = (fun u=> u.1) (⟨u, hu⟩ : {u : E // u ≠ 0}) := by simp only 
   nth_rewrite 2 [heq]
   nth_rewrite 2 [←(OpenEmbedding.toLocalHomeomorph_apply _ EstarToE)]
   rw [LocalHomeomorph.left_inv]
   tauto 
 
-@[default_instance 200]
-instance instChartedSpaceEstar : ChartedSpace E {u : E | u ≠ 0} := EstarToE.singletonChartedSpace 
 
-lemma Estar.chartAt (u : {u : E | u ≠ 0}) : 
+instance instChartedSpaceEstar : ChartedSpace E {u : E // u ≠ 0} := EstarToE.singletonChartedSpace 
+
+lemma Estar.chartAt (u : {u : E // u ≠ 0}) : 
 instChartedSpaceEstar.chartAt u = OpenEmbedding.toLocalHomeomorph (fun u => u.1) EstarToE := by tauto
 
-lemma Estar.chartAt.target (u : {u : E | u ≠ 0}) : 
-(instChartedSpaceEstar.chartAt u).target = {u : E | u ≠ 0} := by 
+lemma Estar.chartAt.target (u : {u : E // u ≠ 0}) : 
+(instChartedSpaceEstar.2 u).toLocalEquiv.target = {u : E // u ≠ 0} := by 
   rw [Estar.chartAt, OpenEmbedding.toLocalHomeomorph_target]
   simp only [ne_eq, Set.coe_setOf, Set.mem_setOf_eq, Subtype.range_coe_subtype]
     
 
-lemma Estar.chartAt.inverse (u : {u : E | u ≠ 0}) {v : E} (hv : v ≠ 0) :
+lemma Estar.chartAt.inverse (u : {u : E // u ≠ 0}) {v : E} (hv : v ≠ 0) :
 v = (instChartedSpaceEstar.chartAt u).symm v := by 
   rw [Estar.chartAt]
   exact OpenEmbeddingEstar.inverse hv 
 
-instance : SmoothManifoldWithCorners (modelWithCornersSelf 𝕜 E) {u : E | u ≠ 0} :=
+instance : SmoothManifoldWithCorners (modelWithCornersSelf 𝕜 E) {u : E // u ≠ 0} :=
   EstarToE.singleton_smoothManifoldWithCorners (modelWithCornersSelf 𝕜 E) 
 
 
