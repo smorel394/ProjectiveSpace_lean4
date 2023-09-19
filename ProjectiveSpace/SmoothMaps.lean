@@ -89,7 +89,7 @@ and a point x in ℙ(E) such that φ(x.rep)=1, then the map y => (1 / φ(y.rep))
 Goodset φ to {φ = 1}, hence to E-{0}, and it is a section of Projectivization.mk'. We introduce it
 and prove that it is smooth.-/
 
-def ProjectiveSpace.LocalSection (φ : E →L[𝕜] 𝕜) :
+def LocalSection (φ : E →L[𝕜] 𝕜) :
 ℙ 𝕜 E → {u : E | u ≠ 0} := by 
   intro y 
   by_cases hgood : φ y.rep = 0 
@@ -99,7 +99,7 @@ def ProjectiveSpace.LocalSection (φ : E →L[𝕜] 𝕜) :
     rw [not_or, and_iff_right hgood]
     exact NonzeroOfNonzeroPhi hgood
 
-lemma ProjectiveSpace.LocalSectionIsSection (φ : E →L[𝕜] 𝕜) {y : ℙ 𝕜 E} (hy : y ∈ Goodset φ) : 
+lemma LocalSectionIsSection (φ : E →L[𝕜] 𝕜) {y : ℙ 𝕜 E} (hy : y ∈ Goodset φ) : 
 Projectivization.mk' 𝕜 (ProjectiveSpace.LocalSection φ y) = y := by
   unfold ProjectiveSpace.LocalSection
   change φ (y.rep) ≠ 0 at hy
@@ -169,7 +169,7 @@ Continuous (InclusionHyperplane φ) := by
   simp only [Set.coe_setOf, Set.mem_setOf_eq]
   continuity
 
-lemma ProjectiveSpace.LocalSection_IsContinuousOn {φ : E →L[𝕜] 𝕜} (hφ : φ ≠ 0) :
+lemma LocalSection_IsContinuousOn {φ : E →L[𝕜] 𝕜} (hφ : φ ≠ 0) :
 ContinuousOn (ProjectiveSpace.LocalSection φ) (Goodset φ) := by 
   rw [continuousOn_open_iff (GoodsetIsOpen φ)]
   intro U hU 
@@ -203,7 +203,7 @@ ContinuousOn (ProjectiveSpace.LocalSection φ) (Goodset φ) := by
   apply NonzeroPhiIsOpen'
 
 
-lemma ProjectiveSpace.LocalSection_IsSmoothOn (φ : E →L[𝕜] 𝕜) :
+lemma LocalSection_IsSmoothOn (φ : E →L[𝕜] 𝕜) :
 ContMDiffOn (ModelHyperplane 𝕜 E) (modelWithCornersSelf 𝕜 E) ⊤ (ProjectiveSpace.LocalSection φ) (Goodset φ) := by 
   by_cases hφ : φ = 0 
   . rw [GoodsetZero hφ]
@@ -332,13 +332,8 @@ lemma Smooth.mapFromProductProjectiveSpace {F G : Type u} [NormedAddCommGroup F]
 {f : N × ℙ 𝕜 E → M} 
 (hf : ContMDiff (ModelWithCorners.prod I' (modelWithCornersSelf 𝕜 E)) I ⊤ 
 (f ∘ (Prod.map (fun x => x) (Projectivization.mk' 𝕜)) : N × {u : E | u ≠ 0} → M)) :
-@ContMDiff 𝕜 _ (G × (LinearMap.ker (Chi 𝕜 E))) _ _ (H' × (LinearMap.ker (Chi 𝕜 E))) _ 
-(ModelWithCorners.prod I' (ModelHyperplane 𝕜 E)) (N × (ℙ 𝕜 E)) _ 
-(@prodChartedSpace H' _ N _ _ (LinearMap.ker (Chi 𝕜 E)) _ (ℙ 𝕜 E) _ _) 
-F _ _ H _ I M _ _ ⊤ f := by 
-  apply @contMDiff_of_locally_contMDiffOn 𝕜 _ (G × (LinearMap.ker (Chi 𝕜 E))) _ _ (H' × (LinearMap.ker (Chi 𝕜 E))) _
-    (ModelWithCorners.prod I' (ModelHyperplane 𝕜 E)) (N × (ℙ 𝕜 E)) _ 
-    (prodChartedSpace H' N (LinearMap.ker (Chi 𝕜 E)) (ℙ 𝕜 E)) 
+ContMDiff (ModelWithCorners.prod I' (ModelHyperplane 𝕜 E)) I ⊤ f := by 
+  apply contMDiff_of_locally_contMDiffOn
   intro x 
   set φ := PhiForChart x.2
   set hφ := PhiForChart_prop x.2 
@@ -355,29 +350,18 @@ F _ _ H _ I M _ _ ⊤ f := by
       exact one_ne_zero 
     . set g : N × ℙ 𝕜 E → M := f ∘ (Prod.map (fun x => x) 
         (Projectivization.mk' 𝕜)) ∘ (Prod.map (fun x => x) (ProjectiveSpace.LocalSection φ)) with hgdef
-      have heq : ∀ (y : N × ℙ 𝕜 E), y ∈ ⊤ ×ˢ (Goodset φ) → f y = g y := by sorry
-      refine @ContMDiffOn.congr 𝕜 _ (G × (LinearMap.ker (Chi 𝕜 E))) _ _ (H' × (LinearMap.ker (Chi 𝕜 E))) _
-        (ModelWithCorners.prod I' (ModelHyperplane 𝕜 E)) (N × (ℙ 𝕜 E)) _ 
-        (prodChartedSpace H' N (LinearMap.ker (Chi 𝕜 E)) (ℙ 𝕜 E)) F _ _ H _ I M
-        _ _ g f (⊤ ×ˢ (Goodset φ)) ⊤ ?_ heq  
+      have heq : ∀ (y : N × ℙ 𝕜 E), y ∈ ⊤ ×ˢ (Goodset φ) → f y = g y := by 
+        intro y hy 
+        simp only [ne_eq, Function.comp_apply, Prod_map]
+        rw [LocalSectionIsSection φ (Set.mem_prod.mp hy).2] 
+      refine ContMDiffOn.congr ?_ heq  
       rw [hgdef, ←Function.comp.assoc]
-      have hf' := @ContMDiff.contMDiffOn 𝕜 _ (G × E) _ _ (H' × E) _ (ModelWithCorners.prod I'
-        (modelWithCornersSelf 𝕜 E)) (N × {u : E | u ≠ 0}) _ 
-        (@prodChartedSpace H' _ N _ _ E _ {u : E | u ≠ 0} _ _)
-        F _ _ H _ I M _ _ _ ⊤ ⊤ hf 
-      refine @ContMDiffOn.comp 𝕜 _ (G × (LinearMap.ker (Chi 𝕜 E))) _ _ (H' × (LinearMap.ker (Chi 𝕜 E))) _
-        (ModelWithCorners.prod I' (ModelHyperplane 𝕜 E)) (N × (ℙ 𝕜 E)) _ 
-        (prodChartedSpace H' N (LinearMap.ker (Chi 𝕜 E)) (ℙ 𝕜 E)) (G × E) _ _ (H' × E) _
-        (ModelWithCorners.prod I' (modelWithCornersSelf 𝕜 E)) (N × {u : E | u ≠ 0}) _ 
-        (@prodChartedSpace H' _ N _ _ E _ {u : E | u ≠ 0} _ _) F _ _ H _ I M _ _ 
-        (Prod.map (fun x => x) (ProjectiveSpace.LocalSection φ)) (⊤ ×ˢ (Goodset φ)) ⊤ ⊤ _ 
-        hf' ?_ ?_
-      . refine @ContMDiffOn.prod_map 𝕜 _ G _ _ H' _ I' N _ _ G _ _ H' _ I' N _ _ 
-          (LinearMap.ker (Chi 𝕜 E)) _ _ (LinearMap.ker (Chi 𝕜 E)) _ (ModelHyperplane 𝕜 E) (ℙ 𝕜 E) _ _ 
-          E _ _ E _ (modelWithCornersSelf 𝕜 E) {u : E | u ≠ 0} _ _ (fun x => x) ⊤ ⊤ 
-          (ProjectiveSpace.LocalSection φ) (Goodset φ) ?_ ?_   
+      have hf' := ContMDiff.contMDiffOn (s := ⊤) hf  
+      refine ContMDiffOn.comp (s := ⊤ ×ˢ (Goodset φ)) (t := ⊤) (M' := N × {u : E | u ≠ 0}) hf' ?_ ?_ 
+      . apply ContMDiffOn.prod_map (N' := {u : E | u ≠ 0})   
         . exact contMDiffOn_id 
         . exact ProjectiveSpace.LocalSection_IsSmoothOn φ  
       . simp only [Set.top_eq_univ, Set.preimage_univ, Set.subset_univ]
+
 
 
