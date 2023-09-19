@@ -255,7 +255,7 @@ dite (LinearMap.ker φ = LinearMap.ker ψ)
 
 /- Finite-dimensional case.-/
 
-variable [FiniteDimensional 𝕜 E]
+variable [FiniteDimensional 𝕜 E] [CompleteSpace 𝕜]
 
 /- Proof that continuous linear forms (= linear forms in this case) separate points.-/
 
@@ -302,13 +302,12 @@ def FiniteDimensional.SeparatingDual : SeparatingDual 𝕜 E :=
 /- Technical thing, I'm not quite why we have to do it this way.-/
 
 private theorem hdim (n : ℕ) [Fact (FiniteDimensional.finrank 𝕜 E = n + 1)] : 
-FiniteDimensional.finrank 𝕜 E = n + 1 := sorry
+FiniteDimensional.finrank 𝕜 E = n + 1 := Fact.elim inferInstance  
 
 /- If E is finite-dimensiional of dimension n + 1, we also define an isomorphism between
 any closed hyperplane and (Fin n → 𝕜).-/
  
 variable (n : ℕ) (hdim : (FiniteDimensional.finrank 𝕜 E = n + 1))
-  [CompleteSpace 𝕜]
 
 
 def ClosedHyperplaneToFixedSpace {φ : E →L[𝕜] 𝕜} (hφ : φ ≠ 0) :
@@ -325,7 +324,7 @@ LinearMap.ker φ ≃L[𝕜] (Fin n → 𝕜) := by
     have h : FiniteDimensional.finrank 𝕜 (LinearMap.range φ) = 1 := by 
       rw [hsurj]
       simp only [finrank_top, FiniteDimensional.finrank_self]
-    erw [hdim n, h] at hadd
+    erw [hdim, h] at hadd
     rw [add_comm] at hadd 
     exact Nat.succ_injective hadd   
   have hrankeq : FiniteDimensional.finrank 𝕜 (LinearMap.ker φ) = 

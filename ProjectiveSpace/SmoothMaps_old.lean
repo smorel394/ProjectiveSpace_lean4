@@ -1,5 +1,6 @@
-import ProjectiveSpace.ProjectiveSpaceManifold
+import ProjectiveSpace.ProjectiveSpaceGeneral
 
+--set_option maxHeartbeats 1000000
 
 open Classical
 noncomputable section 
@@ -7,82 +8,88 @@ noncomputable section
 universe u 
 
 variable {𝕜 E : Type u} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
-  [CompleteSpace 𝕜] [Nonempty {u : E | u ≠ 0}] [SeparatingDual 𝕜 E]
-
-
-namespace ProjectiveSpace 
+variable [CompleteSpace 𝕜]  {hsep : SeparatingDual 𝕜 E}
+variable {χ : E →L[𝕜] 𝕜} (hχ : χ ≠ 0)
+variable [Nonempty (Estar E)]
 
 /- We prove that the Projectivization.mk' map from Estar to ℙ(E) is smooth. This is useful to construct
 smooth maps to ℙ(E).-/
 
--- Why can't Lean infer the ChartedSpace instance on {u : E | u ≠ 0} unless I explicitly tell it to do it ?
-
 lemma Smooth.quotientMap : 
-@ContMDiff 𝕜 _ E _ _ _ _ (modelWithCornersSelf 𝕜 E) {u : E | u ≠ 0} _ inferInstance
-(LinearMap.ker (Chi 𝕜 E)) _ _ _ _ (ModelHyperplane 𝕜 E) (ℙ 𝕜 E) _ _
-⊤ (Projectivization.mk' 𝕜 : {u : E | u ≠ 0} → ℙ 𝕜 E) := by
-  rw [contMDiff_iff]
+@ContMDiff 𝕜 _ E _ _ _ _ (modelWithCornersSelf 𝕜 E) (Estar E) _ _ (LinearMap.ker χ) _ _ _ _
+(ModelHyperplane) (ℙ 𝕜 E) _ (ChartedSpaceProjectiveSpace hχ hsep) ⊤ 
+(Projectivization.mk' 𝕜) := by 
+  set CS := ChartedSpaceProjectiveSpace hχ hsep
+  set SM := ProjectiveSpace_SmoothManifold hχ hsep 
+  rw [@contMDiff_iff 𝕜 _ E _ _ _ _ (modelWithCornersSelf 𝕜 E) (Estar E) _ _ _ (LinearMap.ker χ) _ _ _ _
+    (ModelHyperplane) (ℙ 𝕜 E) _ CS SM _ ⊤]
   constructor 
   . rw [continuous_def]
     intro U 
     rw [isOpen_coinduced]
     simp only [ne_eq, imp_self]
   . intro u x 
-    set φ := PhiForChart x 
-    set hφ := PhiForChart_prop x 
-    have hφ' : φ  ≠ 0 := NonzeroPhiOfPhiEqOne hφ
     unfold ModelHyperplane
-    simp only [extChartAt, LocalHomeomorph.extend, modelWithCornersSelf_localEquiv, LocalEquiv.trans_refl, ne_eq,
-      Set.coe_setOf, Set.mem_setOf_eq, LocalHomeomorph.coe_coe_symm]
-    unfold chartAt ChartedSpace.chartAt ProjectiveSpace.ChartedSpace
+    simp only [extChartAt, LocalHomeomorph.extend, modelWithCornersSelf_localEquiv, LocalEquiv.trans_refl,
+      OpenEmbedding.toLocalHomeomorph_source, LocalHomeomorph.singletonChartedSpace_chartAt_eq,
+      LocalHomeomorph.coe_coe_symm, OpenEmbedding.toLocalHomeomorph_target, Subtype.range_coe_subtype, Set.setOf_mem_eq]
+    unfold chartAt ChartedSpace.chartAt ChartedSpaceProjectiveSpace
     simp only
-    rw [ProjectiveSpace.ChartAt_source]
-    apply ContDiffOn.mono (s := {u : E | φ u ≠ 0})
-    swap
-    . intro v 
-      simp only [Set.mem_inter_iff, Set.mem_preimage, Projectivization.mk'_eq_mk, Set.mem_setOf_eq, and_imp]
-      intro hv1 hv2
-      erw [Estar.chartAt.target u] at hv1 
-      change v ≠ 0 at hv1 
-      conv at hv2 => congr
-                     congr 
-                     erw [←(Estar.chartAt.inverse u hv1)]
-      rw [←GoodsetPreimage] at hv2 
-      exact hv2      
-    . unfold ProjectiveSpace.ChartAt 
-      change ContDiffOn 𝕜 ⊤ ((_ ∘ (ProjectiveSpace.ChartAt_aux x)) ∘ _ ∘ _) _ 
-      refine @ContDiffOn.continuousLinearMap_comp 𝕜 _ E _ _ (LinearMap.ker φ) _ _ 
-         (LinearMap.ker (Chi 𝕜 E)) _ _ _ _ ⊤
-         (OneIsomorphismBetweenTwoClosedHyperplanes hφ' (hChi 𝕜 E)) ?_ 
-      set g := fun (u : E) => ContinuousRetractionOnHyperplane (PhiForChart_prop x) (((φ x.rep) / (φ u)) • u - x.rep) 
-      refine ContDiffOn.congr (f := g) ?_ ?_
-      swap
-      . intro v hv
-        have hvnz : v ≠ 0 := NonzeroOfNonzeroPhi hv
-        simp only [Function.comp_apply, Projectivization.mk'_eq_mk, ne_eq, map_sub, map_smul]
-        conv => lhs
-                congr
-                rfl
-                congr
-                erw [←(Estar.chartAt.inverse u hvnz)] 
-        unfold ProjectiveSpace.ChartAt_aux Chart_LocalHomeomorph Chart_LocalEquiv Chart
-        simp only [map_sub, map_smul, Set.top_eq_univ, LocalHomeomorph.mk_coe, sub_left_inj]
-        rw [hφ]
-        apply Projectivization_vs_LinearMap (φ : E →ₗ[𝕜] 𝕜) (Projectivization.rep_nonzero _) hvnz 
-        rw [Projectivization.mk_rep]
-      . apply ContDiffOn.continuousLinearMap_comp 
-        apply ContDiffOn.sub 
-        . simp_rw [hφ, one_div]
-          apply ContDiffOn.smul
-          . apply ContDiffOn.inv 
-            . apply ContDiff.contDiffOn
-              apply ContinuousLinearMap.contDiff 
-            . exact fun _ hu => hu  
-          . exact contDiffOn_id 
-        . apply contDiffOn_const  
+    rw [ProjectiveSpace.ChartAt_source] 
+    set φ := (Classical.choose (hsep.exists_eq_one (Projectivization.rep_nonzero x))) with hφdef
+    set hφ := (Classical.choose_spec (hsep.exists_eq_one (Projectivization.rep_nonzero x)))
+    have heq : (Estar E) ∩ ((OpenEmbedding.toLocalHomeomorph (fun u => u.1) (EstarToE E)).symm ⁻¹'
+      ((Projectivization.mk' 𝕜) ⁻¹' (Goodset φ))) = {u : E | φ u ≠ 0} := by 
+      ext u 
+      unfold Estar EstarToE
+      simp only [Set.coe_setOf, Set.mem_setOf_eq, Set.mem_inter_iff, Set.mem_preimage,
+        Projectivization.mk'_eq_mk]
+      rw [←GoodsetPreimage]
+      constructor 
+      . intro ⟨hu1, hu2⟩  
+        erw [←(OpenEmbeddingEstar.inverse E hu1)] at hu2  
+        exact hu2  
+      . intro hu 
+        have hunz := NonzeroOfNonzeroPhi hu 
+        erw [←(OpenEmbeddingEstar.inverse E hunz)] 
+        exact ⟨hunz, hu⟩ 
+    rw [heq]  
+    unfold ProjectiveSpace.ChartAt 
+    change ContDiffOn 𝕜 ⊤ ((_ ∘ (ProjectiveSpace.ChartAt_aux hsep x)) ∘ _ ∘ _) _ 
+    rw [Function.comp.assoc]
+    refine @ContDiffOn.continuousLinearMap_comp 𝕜 _ E _ _ (LinearMap.ker φ) _ _ (LinearMap.ker χ) _ _
+      _ _ ⊤ (OneIsomorphismBetweenTwoClosedHyperplanes (NonzeroPhiOfPhiEqOne hφ) hχ) ?_
+    set f := (ProjectiveSpace.ChartAt_aux hsep x) ∘ (Projectivization.mk' 𝕜) ∘ 
+      (OpenEmbedding.toLocalHomeomorph (fun u => u.1) (EstarToE E)).symm 
+    set g := fun (u : E) => ContinuousRetractionOnHyperplane hφ (((φ x.rep) / (φ u)) • u - x.rep) 
+    have hcongr : ∀ (u : E), u ∈ {u : E | φ u ≠ 0} → f u = g u := by 
+      intro u hu 
+      have hunz := NonzeroOfNonzeroPhi hu
+      simp only [ne_eq, Function.comp_apply, Projectivization.mk'_eq_mk, map_sub, map_smul]
+      conv => lhs 
+              congr 
+              rfl
+              congr 
+              erw [←(OpenEmbeddingEstar.inverse E hunz)] 
+      unfold ProjectiveSpace.ChartAt_aux Chart1_LocalHomeomorph Chart1_LocalEquiv Chart1
+      simp only [map_sub, map_smul, Set.top_eq_univ, LocalHomeomorph.mk_coe, sub_left_inj]
+      simp_rw [←hφdef]
+      rw [hφ]
+      erw [@Projectivization_vs_LinearMap 𝕜 E _ _ _ (LinearMap.ker φ) _ _ φ _ _ (Projectivization.rep_nonzero 
+        (Projectivization.mk 𝕜 u hunz)) hunz (ContinuousRetractionOnHyperplane hφ) (Projectivization.mk_rep _)] 
+      simp only [ContinuousLinearMap.coe_coe, one_div]
+    refine ContDiffOn.congr ?_ hcongr 
+    apply ContDiffOn.continuousLinearMap_comp 
+    apply ContDiffOn.sub 
+    . simp_rw [hφ, one_div]
+      apply ContDiffOn.smul
+      . apply ContDiffOn.inv 
+        . apply ContDiff.contDiffOn
+          apply ContinuousLinearMap.contDiff 
+        . exact fun _ hu => hu  
+      . exact contDiffOn_id 
+    . apply contDiffOn_const  
   
-
-#exit 
 
 /- The Projectivization.mk' map admits local smooth sections: if we have a nonzero continuous linear form φ
 and a point x in ℙ(E) such that φ(x.rep)=1, then the map y => (1 / φ(y.rep)) • y.rep sends
