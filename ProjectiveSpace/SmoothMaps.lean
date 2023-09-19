@@ -1,4 +1,6 @@
 import ProjectiveSpace.ProjectiveSpaceManifold
+import Mathlib.Geometry.Manifold.Instances.UnitsOfNormedAlgebra
+import Mathlib.Analysis.NormedSpace.OperatorNorm
 
 
 open Classical
@@ -17,6 +19,7 @@ smooth maps to ℙ(E).-/
 
 -- Why can't Lean infer the ChartedSpace instance on {u : E | u ≠ 0} unless I explicitly tell it to do it ?
 
+variable (𝕜 E)
 
 lemma Smooth.quotientMap : 
 @ContMDiff 𝕜 _ E _ _ _ _ (modelWithCornersSelf 𝕜 E) {u : E | u ≠ 0} _ inferInstance
@@ -82,7 +85,7 @@ lemma Smooth.quotientMap :
           . exact contDiffOn_id 
         . apply contDiffOn_const  
   
-
+variable {𝕜 E}
 
 /- The Projectivization.mk' map admits local smooth sections: if we have a nonzero continuous linear form φ
 and a point x in ℙ(E) such that φ(x.rep)=1, then the map y => (1 / φ(y.rep)) • y.rep sends
@@ -290,6 +293,7 @@ ContMDiffOn (ModelHyperplane 𝕜 E) (modelWithCornersSelf 𝕜 E) ⊤ (Projecti
 /- If f is map from ℙ(E) to a manifold such that f ∘ Projectivization.mk'is smooth, we prove that f is
 smooth. This is useful to construct smooth maps from ℙ(E).-/
 
+
 lemma Smooth.mapFromProjectiveSpace {F : Type u} [NormedAddCommGroup F] [NormedSpace 𝕜 F] {H : Type u}
 [TopologicalSpace H] {I : ModelWithCorners 𝕜 F H} {M : Type u} [TopologicalSpace M] [ChartedSpace H M]
 [SmoothManifoldWithCorners I M] {f : ℙ 𝕜 E → M} 
@@ -364,4 +368,83 @@ ContMDiff (ModelWithCorners.prod I' (ModelHyperplane 𝕜 E)) I ⊤ f := by
       . simp only [Set.top_eq_univ, Set.preimage_univ, Set.subset_univ]
 
 
+/- We define the action of GL(E) on ℙ(E) and prove that it is a smooth action.-/
 
+variable (𝕜 E)
+
+def ActionGL : (E →L[𝕜] E)ˣ × (ℙ 𝕜 E) → (ℙ 𝕜 E) := by 
+  intro ⟨g, x⟩
+  refine Projectivization.mk 𝕜 (g.1 x.rep) ?_ 
+  set h := ContinuousLinearEquiv.ofUnit g 
+  change h x.rep ≠ 0 
+  simp only [ne_eq, AddEquivClass.map_eq_zero_iff]
+  exact Projectivization.rep_nonzero _ 
+
+/- We lift this action to E-{0}.-/
+
+def ActionGLLift : (E →L[𝕜] E)ˣ × {u : E | u ≠ 0} → {u : E | u ≠ 0} := by 
+  intro ⟨g, u⟩
+  refine ⟨g.1 u.1, ?_⟩
+  set h := ContinuousLinearEquiv.ofUnit g 
+  change h u.1 ≠ 0 
+  simp only [ne_eq, AddEquivClass.map_eq_zero_iff]
+  exact u.2
+
+/- We prove that the left is a lift.-/
+
+lemma ActionGLLift_IsLift : 
+(ActionGL 𝕜 E ∘ Prod.map (fun x => x) (Projectivization.mk' 𝕜)) = Projectivization.mk' 𝕜 ∘ ActionGLLift 𝕜 E := sorry
+
+def ActionGLLift_extended : ((E →L[𝕜] E) × E) →L[𝕜] E := sorry 
+
+/- To get the smooth manifold structure on (E →L[𝕜] E), we need E to be complete.-/
+
+variable [CompleteSpace E]
+
+/- Smoothness of the lifted action.-/
+
+lemma ActionGLLift_IsSmooth : ContMDiff (ModelWithCorners.prod (modelWithCornersSelf 𝕜 (E →L[𝕜] E)) 
+  (modelWithCornersSelf 𝕜 E)) (modelWithCornersSelf 𝕜 E) ⊤ (ActionGLLift 𝕜 E)  := by 
+  rw [contMDiff_iff]
+  constructor 
+  . sorry 
+  . intro ⟨g, u⟩ v 
+    simp only [Set.coe_setOf, extChartAt, LocalHomeomorph.extend, Set.mem_setOf_eq,
+      modelWithCornersSelf_localEquiv, LocalEquiv.trans_refl, LocalHomeomorph.toFun_eq_coe,
+      ContinuousLinearMap.strongUniformity_topology_eq, modelWithCorners_prod_toLocalEquiv, LocalEquiv.refl_prod_refl,
+      LocalEquiv.coe_trans_symm, LocalHomeomorph.coe_coe_symm, LocalEquiv.trans_target, LocalEquiv.refl_target,
+      Set.univ_inter]
+    unfold chartAt  
+    erw [Estar.chartAt, OpenEmbedding.toLocalHomeomorph_apply (α := {u : E | u ≠ 0})]
+    unfold ChartedSpace.chartAt prodChartedSpace
+    simp only [ne_eq, Set.coe_setOf, Set.mem_setOf_eq, ContinuousLinearMap.strongUniformity_topology_eq,
+      OpenEmbedding.toLocalHomeomorph_source, LocalHomeomorph.singletonChartedSpace_chartAt_eq,
+      LocalHomeomorph.prod_toLocalEquiv, LocalEquiv.prod_target, OpenEmbedding.toLocalHomeomorph_target]
+    rw [LocalHomeomorph.prod_symm]
+    erw [LocalEquiv.refl_symm]
+    rw [LocalEquiv.refl_coe, Function.comp.right_id]
+    have heq :  ((fun u => ↑u) ∘ ActionGLLift 𝕜 E ∘ (LocalHomeomorph.prod
+          (LocalHomeomorph.symm (OpenEmbedding.toLocalHomeomorph Units.val (Units.openEmbedding_val)))
+          (LocalHomeomorph.symm (chartAt E u))).toFun) = (fun x => ActionGLLift_extended 𝕜 E x) := sorry 
+    erw [heq]
+    apply ContDiff.contDiffOn
+    apply ContinuousLinearMap.contDiff 
+    
+
+#exit 
+  rw [←contMDiffOn_univ]
+  rw [contMDiffOn_iff_of_mem_maximalAtlas]
+
+/- Smoothness of the action.-/
+
+lemma ActionGLIsSmooth : ContMDiff (ModelWithCorners.prod (modelWithCornersSelf 𝕜 (E →L[𝕜] E)) (ModelHyperplane 𝕜 E))
+  (ModelHyperplane 𝕜 E) ⊤ (ActionGL 𝕜 E) := by 
+  apply Smooth.mapFromProductProjectiveSpace 
+  rw [ActionGLLift_IsLift]
+  apply ContMDiff.comp (E' := E) (I' := modelWithCornersSelf 𝕜 E) (M' := {u : E | u ≠ 0}) 
+  . exact Smooth.quotientMap 𝕜 E 
+  . exact ActionGLLift_IsSmooth 𝕜 E 
+
+
+end ProjectiveSpace 
+  
