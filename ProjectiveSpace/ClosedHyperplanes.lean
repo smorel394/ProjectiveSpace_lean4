@@ -11,6 +11,7 @@ import Mathlib.Analysis.NormedSpace.FiniteDimension
 import Mathlib.Analysis.NormedSpace.Multilinear
 import Mathlib.Analysis.Calculus.FormalMultilinearSeries
 import Mathlib.Data.ENat.Basic
+import Mathlib.Analysis.NormedSpace.HahnBanach.SeparatingDual
 
 
 
@@ -252,11 +253,63 @@ dite (LinearMap.ker φ = LinearMap.ker ψ)
 (fun h => OneIsomorphismBetweenTwoClosedHyperplanes_aux hφ hψ h)
 
 
+/- Finite-dimensional case.-/
+
+variable [FiniteDimensional 𝕜 E]
+
+/- Proof that continuous linear forms (= linear forms in this case) separate points.-/
+
+def FiniteDimensional.SeparatingDual : SeparatingDual 𝕜 E := 
+{exists_ne_zero' := 
+  by intro v hv
+     set f : 𝕜 →ₗ[𝕜] Submodule.span 𝕜 {v} := 
+       {
+        toFun := fun a => ⟨a • v, by rw [Submodule.mem_span_singleton]; existsi a; rfl⟩
+        map_add' := by simp only [add_smul, AddSubmonoid.mk_add_mk, forall_const]
+        map_smul' := by simp only [smul_eq_mul, RingHom.id_apply, SetLike.mk_smul_mk, smul_smul, forall_const]
+       }
+     have hsurj : Function.Surjective f := by 
+       intro w
+       have h := w.2 
+       rw [Submodule.mem_span_singleton] at h
+       match h with 
+       | ⟨a, ha⟩ => 
+         existsi a
+         rw [←SetCoe.ext_iff, ←ha]
+         simp only [LinearMap.coe_mk, AddHom.coe_mk]
+     have hinj : Function.Injective f := by 
+       intro a b heq
+       simp only [LinearMap.coe_mk, AddHom.coe_mk, Subtype.mk.injEq] at heq 
+       exact smul_left_injective 𝕜 hv heq 
+     set g := LinearEquiv.ofBijective f ⟨hinj, hsurj⟩
+     match @LinearMap.exists_extend 𝕜 E 𝕜 _ _ _ _ _ (Submodule.span 𝕜 {v}) g.symm with
+     | ⟨φ, hφ⟩ => 
+       have hval : φ v = 1 := by 
+         have h1 : 1 = g.symm ⟨v, Submodule.mem_span_singleton_self v⟩ := by 
+           have h : g 1 = ⟨v, Submodule.mem_span_singleton_self v⟩ := by
+             simp only [LinearEquiv.ofBijective_apply, LinearMap.coe_mk, AddHom.coe_mk, one_smul]
+           rw [←h, ←LinearEquiv.invFun_eq_symm]
+           exact Eq.symm (g.left_inv 1)
+         have h2 : v = Submodule.subtype (Submodule.span 𝕜 {v}) ⟨v, Submodule.mem_span_singleton_self v⟩ := by
+           simp only [Submodule.coeSubtype] 
+         rw [h2, ←(@Function.comp_apply _ _ _ φ _ _), h1, ←LinearMap.coe_comp, hφ]
+         rfl 
+       existsi (LinearMap.toContinuousLinearMap φ)
+       simp only [LinearMap.coe_toContinuousLinearMap', hval, ne_eq, one_ne_zero, not_false_eq_true]
+} 
+
+
+/- Technical thing, I'm not quite why we have to do it this way.-/
+
+private theorem hdim (n : ℕ) [Fact (FiniteDimensional.finrank 𝕜 E = n + 1)] : 
+FiniteDimensional.finrank 𝕜 E = n + 1 := sorry
+
 /- If E is finite-dimensiional of dimension n + 1, we also define an isomorphism between
 any closed hyperplane and (Fin n → 𝕜).-/
  
-variable {n : ℕ} [FiniteDimensional 𝕜 E] (hdim : FiniteDimensional.finrank 𝕜 E = n + 1)
+variable (n : ℕ) (hdim : (FiniteDimensional.finrank 𝕜 E = n + 1))
   [CompleteSpace 𝕜]
+
 
 def ClosedHyperplaneToFixedSpace {φ : E →L[𝕜] 𝕜} (hφ : φ ≠ 0) :
 LinearMap.ker φ ≃L[𝕜] (Fin n → 𝕜) := by 
@@ -272,7 +325,7 @@ LinearMap.ker φ ≃L[𝕜] (Fin n → 𝕜) := by
     have h : FiniteDimensional.finrank 𝕜 (LinearMap.range φ) = 1 := by 
       rw [hsurj]
       simp only [finrank_top, FiniteDimensional.finrank_self]
-    erw [hdim, h] at hadd
+    erw [hdim n, h] at hadd
     rw [add_comm] at hadd 
     exact Nat.succ_injective hadd   
   have hrankeq : FiniteDimensional.finrank 𝕜 (LinearMap.ker φ) = 

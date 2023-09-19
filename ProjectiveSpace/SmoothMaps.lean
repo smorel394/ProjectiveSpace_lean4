@@ -1,6 +1,6 @@
 import ProjectiveSpace.ProjectiveSpaceGeneral
 
-
+--set_option maxHeartbeats 1000000
 
 open Classical
 noncomputable section 
@@ -357,7 +357,65 @@ lemma Smooth.mapFromProjectiveSpace {F : Type u} [NormedAddCommGroup F] [NormedS
       (ChartedSpaceProjectiveSpace hχ hsep) E _ _ E _ (modelWithCornersSelf 𝕜 E) (Estar E) _ _ 
       F _ _ H _ I M _ _ (ProjectiveSpace.LocalSection φ) (Goodset φ) ⊤ ⊤ 
       (f ∘ (Projectivization.mk' 𝕜)) (ContMDiff.contMDiffOn (s := ⊤) hf) ?_ ?_
-    . apply ProjectiveSpace.LocalSection_IsSmoothOn 
+    . exact @ProjectiveSpace.LocalSection_IsSmoothOn 𝕜 E _ _ _ _ hsep χ hχ _ φ  
     . simp only [Set.top_eq_univ, Set.preimage_univ, Set.subset_univ]
+
+
+lemma Smooth.mapFromProductProjectiveSpace {F G : Type u} [NormedAddCommGroup F] [NormedSpace 𝕜 F] 
+[NormedAddCommGroup G] [NormedSpace 𝕜 G] {H H' : Type u} [TopologicalSpace H] [TopologicalSpace H']
+{I : ModelWithCorners 𝕜 F H} {I' : ModelWithCorners 𝕜 G H'} {M N : Type u} [TopologicalSpace M] 
+[ChartedSpace H M] [SmoothManifoldWithCorners I M] [TopologicalSpace N] [ChartedSpace H' N]
+[SmoothManifoldWithCorners I' N] 
+{f : N × ℙ 𝕜 E → M} 
+(hf : ContMDiff (ModelWithCorners.prod I' (modelWithCornersSelf 𝕜 E)) I ⊤ 
+(f ∘ (Prod.map (fun x => x) (Projectivization.mk' 𝕜)) : N × (Estar E) → M)) :
+@ContMDiff 𝕜 _ (G × (LinearMap.ker χ)) _ _ (H' × (LinearMap.ker χ)) _ 
+(ModelWithCorners.prod I' hModelHyperplane) (N × (ℙ 𝕜 E)) _ 
+(@prodChartedSpace H' _ N _ _ (LinearMap.ker χ) _ (ℙ 𝕜 E) _ (ChartedSpaceProjectiveSpace hχ hsep)) 
+F _ _ H _ I M _ _ ⊤ f := by 
+  set CS := ChartedSpaceProjectiveSpace hχ hsep
+  set SM := ProjectiveSpace_SmoothManifold hχ hsep
+  set CSprod :=  @prodChartedSpace H' _ N _ _ (LinearMap.ker χ) _ (ℙ 𝕜 E) _ CS
+  set SMProd := @SmoothManifoldWithCorners.prod 𝕜 _ G _ _ (LinearMap.ker χ) _ _ H' _ I' (LinearMap.ker χ) _
+    ModelHyperplane N _ _ _ (ℙ 𝕜 E) _ CS SM 
+  apply @contMDiff_of_locally_contMDiffOn 𝕜 _ (G × (LinearMap.ker χ)) _ _ (H' × (LinearMap.ker χ)) _
+    (ModelWithCorners.prod I' hModelHyperplane) (N × (ℙ 𝕜 E)) _ CSprod 
+  intro x 
+  set φ := (Classical.choose (hsep.exists_eq_one (Projectivization.rep_nonzero x.2)))
+  set hφ := (Classical.choose_spec (hsep.exists_eq_one (Projectivization.rep_nonzero x.2)))
+  existsi ⊤ ×ˢ (Goodset φ) 
+  constructor 
+  . apply IsOpen.prod 
+    . simp only [Set.top_eq_univ, isOpen_univ]
+    . exact GoodsetIsOpen φ 
+  . constructor 
+    . erw [Set.mem_prod]
+      simp only [Set.top_eq_univ, Set.mem_univ, true_and]  
+      change φ x.2.rep ≠ 0 
+      rw [hφ]
+      exact one_ne_zero 
+    . set g : N × ℙ 𝕜 E → M := f ∘ (Prod.map (fun x => x) 
+        (Projectivization.mk' 𝕜)) ∘ (Prod.map (fun x => x) (ProjectiveSpace.LocalSection φ)) with hgdef
+      have heq : ∀ (y : N × ℙ 𝕜 E), y ∈ ⊤ ×ˢ (Goodset φ) → f y = g y := by sorry
+      refine @ContMDiffOn.congr 𝕜 _ (G × (LinearMap.ker χ)) _ _ (H' × (LinearMap.ker χ)) _
+        (ModelWithCorners.prod I' hModelHyperplane) (N × (ℙ 𝕜 E)) _ CSprod F _ _ H _ I M
+        _ _ g f (⊤ ×ˢ (Goodset φ)) ⊤ ?_ heq  
+      rw [hgdef, ←Function.comp.assoc]
+      have hf' := @ContMDiff.contMDiffOn 𝕜 _ (G × E) _ _ (H' × E) _ (ModelWithCorners.prod I'
+        (modelWithCornersSelf 𝕜 E)) (N × (Estar E)) _ (@prodChartedSpace H' _ N _ _ E _ (Estar E) _ _)
+        F _ _ H _ I M _ _ _ ⊤ ⊤ hf 
+      refine @ContMDiffOn.comp 𝕜 _ (G × (LinearMap.ker χ)) _ _ (H' × (LinearMap.ker χ)) _
+        (ModelWithCorners.prod I' hModelHyperplane) (N × (ℙ 𝕜 E)) _ CSprod (G × E) _ _ (H' × E) _
+        (ModelWithCorners.prod I' (modelWithCornersSelf 𝕜 E)) (N × (Estar E)) _ 
+        (@prodChartedSpace H' _ N _ _ E _ (Estar E) _ _) F _ _ H _ I M _ _ 
+        (Prod.map (fun x => x) (ProjectiveSpace.LocalSection φ)) (⊤ ×ˢ (Goodset φ)) ⊤ ⊤ _ 
+        hf' ?_ ?_
+      . refine @ContMDiffOn.prod_map 𝕜 _ G _ _ H' _ I' N _ _ G _ _ H' _ I' N _ _ 
+          (LinearMap.ker χ) _ _ (LinearMap.ker χ) _ ModelHyperplane (ℙ 𝕜 E) _ CS 
+          E _ _ E _ (modelWithCornersSelf 𝕜 E) (Estar E) _ _ (fun x => x) ⊤ ⊤ 
+          (ProjectiveSpace.LocalSection φ) (Goodset φ) ?_ ?_   
+        . exact contMDiffOn_id 
+        . exact @ProjectiveSpace.LocalSection_IsSmoothOn 𝕜 E _ _ _ _ hsep χ hχ _ φ  
+      . simp only [Set.top_eq_univ, Set.preimage_univ, Set.subset_univ]
 
 
