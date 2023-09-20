@@ -259,16 +259,15 @@ section NonemptyEstar
 
 /- If FiniteDimensional.finrank E is ≥ 1, then {u : E // u ≠ 0} is nonempty.-/
 
-def NonemptyEstar (hrank : FiniteDimensional.finrank 𝕜 E ≥ 1) : Nonempty {u : E // u ≠ 0} := by
-  by_contra habs 
-  have hsin : Subsingleton E := by
-    apply Subsingleton.intro
-    intro u v 
-    simp only [ne_eq, nonempty_subtype, not_exists, not_not] at habs 
-    rw [habs u, habs v]
-  rw [@FiniteDimensional.finrank_zero_of_subsingleton 𝕜 E _ _ _ _ _ hsin] at hrank
-  exact not_lt_of_le hrank zero_lt_one 
-
+instance NonemptyEstar [Nontrivial E] : Nonempty {u : E // u ≠ 0} := by
+  apply Nonempty.intro 
+  set u := Classical.choose (exists_pair_ne E)
+  set v := Classical.choose (Classical.choose_spec (exists_pair_ne E))
+  set huv := Classical.choose_spec (Classical.choose_spec (exists_pair_ne E))
+  by_cases h : u = 0 
+  . have h' : v ≠ 0 := by rw [←h]; apply Ne.symm; exact huv
+    exact ⟨v, h'⟩
+  . exact ⟨u, h⟩
 
 end NonemptyEstar 
 
@@ -322,14 +321,6 @@ instance FiniteDimensional.SeparatingDual : SeparatingDual 𝕜 E :=
 
 
 /- If FiniteDimensional.finrank E = n + 1, then {u : E // u ≠ 0} is nonempty.-/
-
-
-def NonemptyEstar' {n : ℕ} [Fact (FiniteDimensional.finrank 𝕜 E = n + 1)] : Nonempty {u : E // u ≠ 0} := by
-  have hrank : FiniteDimensional.finrank 𝕜 E = n + 1 := Fact.elim inferInstance 
-  have h : FiniteDimensional.finrank 𝕜 E ≥ 1 := by
-    rw [hrank]
-    simp only [ge_iff_le, le_add_iff_nonneg_left, zero_le]
-  exact NonemptyEstar h   
 
 
 -- I don't think that this is needed anymore. Commenting.
