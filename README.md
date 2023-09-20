@@ -18,6 +18,8 @@ TODO:
 
 # Detail of the files
 
+All the interesting files are in the ProjectiveSpace directory, because I do not know how to make a Lean4 project.
+
 ## ClosedHyperplanes.lean 
 
 Preliminaries on closed hyperplanes in E, in particular the construction of a retraction on a closed hyperplane and an isomorphism between any two closed hyperplanes. Also contains the construction of a SeparatingDual instance if E is finite-dimensional.
