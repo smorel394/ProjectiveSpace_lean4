@@ -14,10 +14,11 @@ variable (𝕜 E : Type u) [NontriviallyNormedField 𝕜] [NormedAddCommGroup E]
 So we need to fix a nonzero continuous linear form on E and to use its kernel. It is isomorphic 
 to every other closed hyperplane by OneIsomorphismBetweenClosedHyperplanes. But we don't want to
 have that linear form as a parameter in our instance, so we will use a choice function to pick it,
-after we put a Nonempty instance on E-{0} and a SeperatingDual instance on E. We need the
-SeparatingDual instance anyway to prove that every point of ℙ(E) is in the domain of a chart.-/
+after we put a Nonempty instance on E-{0} (inferred from a Nontrivial instance on E)
+and a SeperatingDual instance on E. We need the SeparatingDual instance anyway to prove that 
+every point of ℙ(E) is in the domain of a chart.-/
 
-variable [Nonempty {u : E // u ≠ 0}] [SeparatingDual 𝕜 E]
+variable [Nontrivial E] [SeparatingDual 𝕜 E]
 
 
 lemma ExistsNonzeroContinuousLinearForm : ∃ (χ : E →L[𝕜] 𝕜), χ ≠ 0 := by 

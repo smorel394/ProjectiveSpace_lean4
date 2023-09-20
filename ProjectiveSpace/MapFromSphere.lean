@@ -7,7 +7,7 @@ noncomputable section
 universe u 
 
 variable (E : Type) [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] {n : Nat}
-  [Fact (FiniteDimensional.finrank ℝ E = n + 1)]
+  [Fact (FiniteDimensional.finrank ℝ E = n + 1)] [Nontrivial E]
 
 lemma SphereToEstar_aux (x : Metric.sphere (0 : E) 1) : x.1 ≠ 0 := by
   by_contra habs 
@@ -20,16 +20,6 @@ def SphereToEstar : Metric.sphere (0 : E) 1 → {u : E // u ≠ 0} := by
   intro x
   exact ⟨x.1, SphereToEstar_aux E x⟩
   
-
-instance : Nonempty {u : E // u ≠ 0} := sorry --@NonemptyEstar' ℝ E _ _ _ n _ 
-
-/- Error message:
-cannot find synthesization order for instance instNonemptySubtypeNeOfNatToOfNat0ToZeroToNegZeroClassToSubNegZeroMonoidToSubtractionMonoidToDivisionAddCommMonoidToAddCommGroup with type
-  ∀ (E : Type) [inst : NormedAddCommGroup E] [inst_1 : InnerProductSpace ℝ E] {n : ℕ}
-    [inst_2 : Fact (FiniteDimensional.finrank ℝ E = n + 1)], Nonempty { u // u ≠ 0 }
-all remaining arguments have metavariables:
-  Fact (FiniteDimensional.finrank ℝ E = ?n + 1)
--/
 
 lemma SphereToEstar_IsSmooth : ContMDiff (modelWithCornersSelf ℝ (EuclideanSpace ℝ (Fin n)))
 (modelWithCornersSelf ℝ E) ⊤ (SphereToEstar E) := by 

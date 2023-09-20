@@ -9,7 +9,7 @@ noncomputable section
 universe u 
 
 variable {𝕜 E : Type u} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
-  [CompleteSpace 𝕜] [Nonempty {u : E // u ≠ 0}] [SeparatingDual 𝕜 E]
+  [CompleteSpace 𝕜] [Nontrivial E] [SeparatingDual 𝕜 E]
 
 
 namespace ProjectiveSpace 
@@ -138,25 +138,9 @@ ContinuousOn (RetractionOnHyperplane hφ) {u : {u : E | u ≠ 0} | φ u.1 ≠ 0}
   apply Continuous.smul
   . simp_rw [one_div]
     apply Continuous.inv₀ 
-    . rename_i inst_4
-      aesop_unfold [Function.comp]
-      simp_all only [ne_eq, nonempty_subtype, Set.coe_setOf, Set.mem_setOf_eq, one_div, Set.restrict_apply,
-        Subtype.forall]
-      unhygienic with_reducible aesop_destruct_products
-      apply Continuous.clm_apply
-      · apply continuous_const
-      · apply Continuous.comp'
-        · apply continuous_induced_dom
-        · apply continuous_induced_dom
+    . continuity
     . exact fun u => u.2 
-  . rename_i inst_4
-    aesop_unfold [Function.comp]
-    simp_all only [ne_eq, nonempty_subtype, Set.coe_setOf, Set.mem_setOf_eq, one_div, Set.restrict_apply,
-      Subtype.forall]
-    unhygienic with_reducible aesop_destruct_products
-    apply Continuous.comp'
-    · apply continuous_induced_dom
-    · apply continuous_induced_dom
+  . continuity
 
 def InclusionHyperplane (φ : E →L[𝕜] 𝕜) : {u : E | φ u = 1} → {u : E | u ≠ 0} := by
   intro ⟨u, hu⟩
