@@ -12,6 +12,8 @@ import Mathlib.Analysis.NormedSpace.Multilinear
 import Mathlib.Analysis.Calculus.FormalMultilinearSeries
 import Mathlib.Data.ENat.Basic
 import Mathlib.Analysis.NormedSpace.HahnBanach.SeparatingDual
+import Mathlib.LinearAlgebra.Finrank
+
 
 
 
@@ -253,13 +255,33 @@ dite (LinearMap.ker φ = LinearMap.ker ψ)
 (fun h => OneIsomorphismBetweenTwoClosedHyperplanes_aux hφ hψ h)
 
 
+section NonemptyEstar
+
+/- If FiniteDimensional.finrank E is ≥ 1, then {u : E // u ≠ 0} is nonempty.-/
+
+def NonemptyEstar (hrank : FiniteDimensional.finrank 𝕜 E ≥ 1) : Nonempty {u : E // u ≠ 0} := by
+  by_contra habs 
+  have hsin : Subsingleton E := by
+    apply Subsingleton.intro
+    intro u v 
+    simp only [ne_eq, nonempty_subtype, not_exists, not_not] at habs 
+    rw [habs u, habs v]
+  rw [@FiniteDimensional.finrank_zero_of_subsingleton 𝕜 E _ _ _ _ _ hsin] at hrank
+  exact not_lt_of_le hrank zero_lt_one 
+
+
+end NonemptyEstar 
+
+
+
+section FiniteDimensional
 /- Finite-dimensional case.-/
 
 variable [FiniteDimensional 𝕜 E] [CompleteSpace 𝕜]
 
 /- Proof that continuous linear forms (= linear forms in this case) separate points.-/
 
-def FiniteDimensional.SeparatingDual : SeparatingDual 𝕜 E := 
+instance FiniteDimensional.SeparatingDual : SeparatingDual 𝕜 E := 
 {exists_ne_zero' := 
   by intro v hv
      set f : 𝕜 →ₗ[𝕜] Submodule.span 𝕜 {v} := 
@@ -299,11 +321,19 @@ def FiniteDimensional.SeparatingDual : SeparatingDual 𝕜 E :=
 } 
 
 
-/- Technical thing, I'm not quite why we have to do it this way.-/
+/- If FiniteDimensional.finrank E = n + 1, then {u : E // u ≠ 0} is nonempty.-/
 
-private theorem hdim (n : ℕ) [Fact (FiniteDimensional.finrank 𝕜 E = n + 1)] : 
-FiniteDimensional.finrank 𝕜 E = n + 1 := Fact.elim inferInstance  
 
+def NonemptyEstar' {n : ℕ} [Fact (FiniteDimensional.finrank 𝕜 E = n + 1)] : Nonempty {u : E // u ≠ 0} := by
+  have hrank : FiniteDimensional.finrank 𝕜 E = n + 1 := Fact.elim inferInstance 
+  have h : FiniteDimensional.finrank 𝕜 E ≥ 1 := by
+    rw [hrank]
+    simp only [ge_iff_le, le_add_iff_nonneg_left, zero_le]
+  exact NonemptyEstar h   
+
+
+-- I don't think that this is needed anymore. Commenting.
+/-
 /- If E is finite-dimensiional of dimension n + 1, we also define an isomorphism between
 any closed hyperplane and (Fin n → 𝕜).-/
  
@@ -332,6 +362,9 @@ LinearMap.ker φ ≃L[𝕜] (Fin n → 𝕜) := by
     rw [hrank]
     simp only [FiniteDimensional.finrank_fintype_fun_eq_card, Fintype.card_fin]
   exact ContinuousLinearEquiv.ofFinrankEq hrankeq    
+-/
+
+end FiniteDimensional
 
 
-end
+end 

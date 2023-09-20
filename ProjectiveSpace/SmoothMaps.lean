@@ -400,7 +400,9 @@ lemma ActionGLLift_IsLift :
   rw [Projectivization.mk_eq_mk_iff] at heq 
   match heq with
   | ⟨a, ha⟩ => 
-     
+    existsi a 
+    rw [←ha]
+    simp only [ne_eq, ContinuousLinearMap.map_smul_of_tower] 
 
 def ActionGLLift_extended : ((E →L[𝕜] E) × E) → E := fun ⟨T, u⟩ => T u 
 
@@ -443,8 +445,7 @@ lemma ActionGLLift_IsSmooth : ContMDiff (ModelWithCorners.prod (modelWithCorners
     simp only [ne_eq, Set.coe_setOf, OpenEmbedding.toLocalHomeomorph_target, Subtype.range_coe_subtype,
       Set.mem_setOf_eq]
     exact hnz 
-  rw [heq]
-  rw [←contMDiffOn_univ]
+  rw [heq, ←contMDiffOn_univ]
   apply ContMDiffOn.comp (I' := modelWithCornersSelf 𝕜 E) (t := {u : E | u ≠ 0})
   . have h : e.target = {u : E | u ≠ 0} := by 
       ext u
