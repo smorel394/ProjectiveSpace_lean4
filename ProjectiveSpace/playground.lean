@@ -9,9 +9,7 @@ noncomputable section
 
 universe u 
 
-
 variable {𝕜 E : Type u} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E] [CompleteSpace E]
 
-#synth CompleteSpace (E →L[𝕜] E) 
-
-#synth ChartedSpace (E →L[𝕜] E) (E →L[𝕜] E)ˣ 
+example (v : E) (hv : v ≠ 0) : ∃ (φ : E →ₗ[𝕜] 𝕜), φ v ≠ 0 := by
+  library_search 

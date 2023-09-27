@@ -1,7 +1,7 @@
 import ProjectiveSpace.ProjectiveSpaceManifold
 import Mathlib.Geometry.Manifold.Instances.UnitsOfNormedAlgebra
 import Mathlib.Analysis.NormedSpace.OperatorNorm
-import ProjectiveSpace.contMDiff_openEmbedding
+
 
 open Classical
 noncomputable section 
@@ -198,6 +198,9 @@ ContMDiffOn (ModelHyperplane 𝕜 E) (modelWithCornersSelf 𝕜 E) ⊤ (Projecti
     simp only [Set.mem_empty_iff_false, Set.empty_inter, IsEmpty.forall_iff, implies_true]
   . match NonzeroExistsEqOne hφ with
     | ⟨v, hv⟩ => 
+      have hv' : φ v ≠ 0 := by rw [hv]; exact one_ne_zero
+      set x := Projectivization.mk 𝕜 v (NonzeroOfNonzeroPhi hv')
+      set y := x.rep
       rw [contMDiffOn_iff_of_mem_maximalAtlas
       (e := (LocalHomeomorph.transHomeomorph 
         (Chart_LocalHomeomorph hv) (ContinuousLinearEquiv.toHomeomorph
