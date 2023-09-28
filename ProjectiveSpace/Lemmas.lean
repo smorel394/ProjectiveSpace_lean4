@@ -17,3 +17,24 @@ LinearMap.ker (Basis.constr b S v) = ⊥ := by
     exact h 
   . exact fun h => by simp only [h, map_zero]
 
+lemma LinearMap.graph_fst_injective {R : Type u} {M : Type v} {M₂ : Type w} [Semiring R] [AddCommMonoid M] 
+[AddCommMonoid M₂] [Module R M] [Module R M₂] (f : M →ₗ[R] M₂) :
+Function.Injective ((LinearMap.fst R M M₂).domRestrict (LinearMap.graph f)) := by
+  intro ⟨v, hv⟩ ⟨v', hv'⟩ hvv' 
+  simp only [Subtype.mk.injEq]
+  simp only [domRestrict_apply, fst_apply] at hvv' 
+  rw [Prod.ext_iff, and_iff_right hvv']
+  rw [LinearMap.mem_graph_iff] at hv hv'
+  rw [hv, hv', hvv']
+
+lemma LinearMap.graph_fst_surjective {R : Type u} {M : Type v} {M₂ : Type w} [Semiring R] [AddCommMonoid M] 
+[AddCommMonoid M₂] [Module R M] [Module R M₂] (f : M →ₗ[R] M₂) :
+Function.Surjective ((LinearMap.fst R M M₂).domRestrict (LinearMap.graph f)) := by
+  intro v 
+  simp only [domRestrict_apply, fst_apply, Subtype.exists, mem_graph_iff, exists_prop, Prod.exists, exists_eq_left,
+         exists_eq]
+
+noncomputable def LinearMap.graph_equiv_fst {R : Type u} {M : Type v} {M₂ : Type w} [Semiring R] [AddCommMonoid M] 
+[AddCommMonoid M₂] [Module R M] [Module R M₂] (f : M →ₗ[R] M₂) : LinearMap.graph f ≃ₗ[R] M := 
+ LinearEquiv.ofBijective ((LinearMap.fst R M M₂).domRestrict (LinearMap.graph f)) 
+ ⟨LinearMap.graph_fst_injective f, LinearMap.graph_fst_surjective f⟩

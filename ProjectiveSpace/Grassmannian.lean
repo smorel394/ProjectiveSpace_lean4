@@ -45,6 +45,8 @@ def QGrassmannian.mk' (v : { v : Fin r → V // LinearIndependent K v }) : QGras
 theorem QGrassmannian.mk'_eq_mk (v : { v : Fin r → V // LinearIndependent K v}) : 
 QGrassmannian.mk' K v = QGrassmannian.mk K v.1 v.2 := rfl
 
+variable {K}
+
 /-- Choose a representative of `v : Projectivization K V` in `V`. -/
 protected noncomputable def QGrassmannian.rep (x : QGrassmannian K V r) : Fin r → V :=
   x.out' 
@@ -57,6 +59,8 @@ LinearIndependent K x.rep  :=
 @[simp]
 theorem QGrassmannian.mk_rep (x : QGrassmannian K V r) : 
 QGrassmannian.mk K x.rep x.rep_linearIndependent = x := Quotient.out_eq' _
+
+variable (K)
 
 lemma QGrassmannian.mk_eq_mk_iff_span (v w : Fin r → V) (hv : LinearIndependent K v)
 (hw : LinearIndependent K w) :
@@ -240,8 +244,8 @@ w = MatrixAction K f v := by
     exact hf' 
 
 lemma QGrassmannian.exists_matrixAction_eq_mk_rep (v : Fin r → V) (hv : LinearIndependent K v) :
-∃ (f : (Fin r → K) ≃ₗ[K] (Fin r → K)), MatrixAction K f v = QGrassmannian.rep K (QGrassmannian.mk K v hv) := by
-  have heq := Eq.symm (QGrassmannian.mk_rep K (QGrassmannian.mk K v hv))
+∃ (f : (Fin r → K) ≃ₗ[K] (Fin r → K)), MatrixAction K f v = QGrassmannian.rep (QGrassmannian.mk K v hv) := by
+  have heq := Eq.symm (QGrassmannian.mk_rep (QGrassmannian.mk K v hv))
   rw [QGrassmannian.mk_eq_mk_iff_matrixAction] at heq 
   obtain ⟨f, hf⟩ := heq 
   existsi f 
@@ -277,7 +281,7 @@ instance QGrassmannian.finiteDimensional_submodule (x : QGrassmannian K V r) : F
 
 lemma QGrassmannian.finrank_submodule (x : QGrassmannian K V r) : FiniteDimensional.finrank K x.submodule = r := by 
   rw [QGrassmannian.submodule_eq]
-  rw [finrank_span_eq_card (QGrassmannian.rep_linearIndependent K x)]
+  rw [finrank_span_eq_card (QGrassmannian.rep_linearIndependent x)]
   simp only [Fintype.card_fin]
 
 
@@ -305,9 +309,9 @@ lemma QGrassmannianToGrassmannian_apply' {v : Fin r → V} (hv : LinearIndepende
 lemma QGrassmannianToGrassmannian_apply (x : QGrassmannian K V r) :
 QGrassmannianToGrassmannian K V r x = ⟨Submodule.span K (Set.range x.rep),
 ⟨FiniteDimensional.span_of_finite K (Set.finite_range x.rep), 
-by rw [finrank_span_eq_card (QGrassmannian.rep_linearIndependent K x)]; simp only [Fintype.card_fin]⟩⟩ := by
+by rw [finrank_span_eq_card (QGrassmannian.rep_linearIndependent x)]; simp only [Fintype.card_fin]⟩⟩ := by
   conv => lhs 
-          rw [←(QGrassmannian.mk_rep K x)]
+          rw [←(QGrassmannian.mk_rep x)]
   --rw [QGrassmannianToGrassmannian_apply']
   
 
@@ -325,7 +329,7 @@ GrassmannianToQGrassmannian K V r (QGrassmannianToGrassmannian K V r x) = x := b
   unfold GrassmannianToQGrassmannian
   simp only [Submodule.coeSubtype]
   conv => rhs 
-          rw [←(QGrassmannian.mk_rep K x)]
+          rw [←(QGrassmannian.mk_rep x)]
   rw [QGrassmannian.mk_eq_mk_iff_span]
   rw [Set.range_comp]
   conv => lhs
@@ -348,8 +352,77 @@ noncomputable def QGrassmannianEquivGrassmannian : QGrassmannian K V r ≃ Grass
   right_inv := GrassmannianToQGrassmannianToGrassmannian K V r
 }
 
+/- Since we have equivalence, we can define Grassmannian.mk and Grassmannian.rep by composing the QGrassmannian
+versions with the equivalence.-/
+
+variable {V r}
+
+def Grassmannian.mk (v : Fin r → V) (hv : LinearIndependent K v) : Grassmannian K V r :=
+QGrassmannianEquivGrassmannian K V r (QGrassmannian.mk K v hv)
+
+def Grassmannian.mk' (v : { v : Fin r → V // LinearIndependent K v }) : Grassmannian K V r :=
+QGrassmannianEquivGrassmannian K V r (QGrassmannian.mk' K v)
+  
+
+@[simp]
+theorem Grassmannian.mk'_eq_mk (v : { v : Fin r → V // LinearIndependent K v}) : 
+Grassmannian.mk' K v = Grassmannian.mk K v.1 v.2 := rfl
+
+variable {K}
+
+def Grassmannian.rep (x : Grassmannian K V r) : Fin r → V :=
+QGrassmannian.rep ((QGrassmannianEquivGrassmannian K V r).symm x)
+
+lemma Grassmannian.rep_linearIndependent (x : Grassmannian K V r) :
+LinearIndependent K (Grassmannian.rep x) := 
+QGrassmannian.rep_linearIndependent _ 
+
+
+@[simp]
+theorem Grassmannian.mk_rep (x : Grassmannian K V r) : 
+Grassmannian.mk K (Grassmannian.rep x) (Grassmannian.rep_linearIndependent x) = x := by 
+  unfold Grassmannian.mk Grassmannian.rep 
+  rw [QGrassmannian.mk_rep]
+  simp only [Equiv.apply_symm_apply]
+
+
+variable (K)
+
+
+lemma Grassmannian.mk_eq_mk_iff_span (v w : Fin r → V) (hv : LinearIndependent K v)
+(hw : LinearIndependent K w) :
+Grassmannian.mk K v hv = Grassmannian.mk K w hw ↔ 
+Submodule.span K (Set.range v) = Submodule.span K (Set.range w) := by 
+  unfold Grassmannian.mk
+  simp only [EmbeddingLike.apply_eq_iff_eq]
+  rw [QGrassmannian.mk_eq_mk_iff_span]
+
+
+lemma Grassmannian.mk_eq_mk_iff_matrixAction (v w : Fin r → V) (hv : LinearIndependent K v)
+(hw : LinearIndependent K w) :
+Grassmannian.mk K v hv = Grassmannian.mk K w hw ↔ ∃ (f : (Fin r → K) ≃ₗ[K] (Fin r → K)), 
+w = MatrixAction K f v := by 
+  unfold Grassmannian.mk
+  simp only [EmbeddingLike.apply_eq_iff_eq]
+  rw [QGrassmannian.mk_eq_mk_iff_matrixAction]
+
+
+lemma Grassmannian.mk_eq_mk_iff_matrixAction' (v w : Fin r → V) (hv : LinearIndependent K v)
+(hw : LinearIndependent K w) :
+Grassmannian.mk K v hv = Grassmannian.mk K w hw ↔ ∃ (f : (Fin r → K) →ₗ[K] (Fin r → K)), 
+w = MatrixAction K f v := by
+  unfold Grassmannian.mk
+  simp only [EmbeddingLike.apply_eq_iff_eq]
+  rw [QGrassmannian.mk_eq_mk_iff_matrixAction']
+
+lemma Grassmannian.exists_matrixAction_eq_mk_rep (v : Fin r → V) (hv : LinearIndependent K v) :
+∃ (f : (Fin r → K) ≃ₗ[K] (Fin r → K)), MatrixAction K f v = Grassmannian.rep (Grassmannian.mk K v hv) := by
+  unfold Grassmannian.rep Grassmannian.mk
+  simp only [Equiv.symm_apply_apply]
+  exact QGrassmannian.exists_matrixAction_eq_mk_rep K v hv 
+
 /- The case r = 1.-/
-variable {V r K}
+variable {K}
 
 def QGrassmannianToProjectiveSpace (x : QGrassmannian K V 1) : ℙ K V := 
 Quotient.liftOn' x (fun v => Projectivization.mk K (v.1 default) (LinearIndependent.ne_zero default v.2)) 
@@ -397,12 +470,12 @@ ProjectiveSpaceToQGrassmannian (QGrassmannianToProjectiveSpace x) = x := by
   conv => lhs
           congr
           congr
-          rw [←(QGrassmannian.mk_rep K x)]
+          rw [←(QGrassmannian.mk_rep x)]
   rw [QGrassmannianToProjectiveSpace_mk, ProjectiveSpaceToQGrassmannian_mk]
   conv => rhs
-          rw [←(QGrassmannian.mk_rep K x)]
+          rw [←(QGrassmannian.mk_rep x)]
           congr
-          rw [eq_const_of_unique (QGrassmannian.rep K x)]
+          rw [eq_const_of_unique (QGrassmannian.rep x)]
   
 lemma ProjectiveSpaceToQGrassmannianToProjectiveSpace (x : ℙ K V) :
 QGrassmannianToProjectiveSpace (ProjectiveSpaceToQGrassmannian x) = x := by
@@ -465,7 +538,21 @@ lemma QGrassmannian.map_comp {U : Type*} [AddCommGroup U] [Module K U] (f : V �
   rfl 
 
 
+/- Topologies. -/
 
+variable {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
+/-- We equip the QGrassmannian with the "coinduced" topology from the natural map
+`mk' : {v : Fin r → E // LinearIndependent 𝕜 v} → QGrassmannanian 𝕜 V r`. -/
+instance : TopologicalSpace (QGrassmannian 𝕜 E r) :=
+TopologicalSpace.coinduced (QGrassmannian.mk' 𝕜) instTopologicalSpaceSubtype 
+
+/- We equip the Grassmannian with the coinduced topology from the equivalence with the QGrassmannian. Note that this is also
+an induced topology, see Equiv.induced_symm and Equiv.coinduced_symm.-/
+
+instance : TopologicalSpace (Grassmannian 𝕜 E r) :=
+TopologicalSpace.coinduced (QGrassmannianEquivGrassmannian 𝕜 E r) inferInstance  
+
+end
 
   

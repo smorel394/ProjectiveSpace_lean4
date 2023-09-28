@@ -10,7 +10,7 @@ universe u
 
 /- Manifold structure on E-{0}.-/
 
-variable {k E : Type u} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
+variable {𝕜 E : Type u} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [CompleteSpace 𝕜]
 
 lemma EstarIsOpen:  IsOpen {u : E | u ≠ 0} :=
