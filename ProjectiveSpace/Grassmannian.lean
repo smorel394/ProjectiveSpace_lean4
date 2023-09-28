@@ -2,6 +2,8 @@ import Mathlib.Tactic
 import ProjectiveSpace.Lemmas 
 import Mathlib.LinearAlgebra.FiniteDimensional 
 import Mathlib.Algebra.Module.Projective
+import Mathlib.LinearAlgebra.ProjectiveSpace.Independence
+
 
 
 noncomputable section 
@@ -338,9 +340,86 @@ QGrassmannianToGrassmannian K V r (GrassmannianToQGrassmannian K V r W) = W := b
   erw [←(LinearMap.map_span (Submodule.subtype _))]
   simp only [Basis.span_eq, Submodule.map_top, Submodule.range_subtype]
   
+noncomputable def QGrassmannianEquivGrassmannian : QGrassmannian K V r ≃ Grassmannian K V r :=
+{
+  toFun := QGrassmannianToGrassmannian K V r
+  invFun := GrassmannianToQGrassmannian K V r 
+  left_inv := QGrassmannianToGrassmannianToQGrassmannian K V r 
+  right_inv := GrassmannianToQGrassmannianToGrassmannian K V r
+}
 
-variable {K V}
-variable {W : Type*} [AddCommGroup W] [Module K W]
+/- The case r = 1.-/
+variable {V r K}
+
+def QGrassmannianToProjectiveSpace (x : QGrassmannian K V 1) : ℙ K V := 
+Quotient.liftOn' x (fun v => Projectivization.mk K (v.1 default) (LinearIndependent.ne_zero default v.2)) 
+  (by intro ⟨v, hv⟩ ⟨w, hw⟩ hvw
+      change Submodule.span K _ = Submodule.span K _ at hvw 
+      rw [Set.range_unique, Set.range_unique] at hvw
+      simp only [Fin.default_eq_zero] at hvw  
+      rw [Submodule.span_singleton_eq_span_singleton] at hvw 
+      simp only [Fin.default_eq_zero]
+      apply Eq.symm
+      exact (Projectivization.mk_eq_mk_iff K _ _ _ _).mpr hvw 
+  )
+
+
+lemma QGrassmannianToProjectiveSpace_mk (v : Fin 1 → V) (hv : LinearIndependent K v) :
+QGrassmannianToProjectiveSpace (QGrassmannian.mk K v hv) = 
+Projectivization.mk K (v default) (LinearIndependent.ne_zero default hv) := by
+  unfold QGrassmannianToProjectiveSpace QGrassmannian.mk
+  simp only [Fin.default_eq_zero, Quotient.liftOn'_mk'']
+  
+
+
+def ProjectiveSpaceToQGrassmannian (x : ℙ K V) : QGrassmannian K V 1 :=
+Quotient.liftOn' x (fun v => QGrassmannian.mk K (fun _ => v.1) (linearIndependent_unique (fun _ => v.1) v.2)) 
+(by intro ⟨v, hv⟩ ⟨w, hw⟩ hvw 
+    rw [QGrassmannian.mk_eq_mk_iff_span]
+    change ∃ _, _ at hvw 
+    simp only at hvw  
+    rw [Set.range_unique]
+    simp only [Set.range_const]
+    apply Eq.symm
+    exact Submodule.span_singleton_eq_span_singleton.mpr hvw  
+)
+  
+
+lemma ProjectiveSpaceToQGrassmannian_mk (v : V) (hv : v ≠ 0) :
+ProjectiveSpaceToQGrassmannian (Projectivization.mk K v hv) = QGrassmannian.mk K (fun _ => v) 
+(linearIndependent_unique (fun _ => v) hv) := by
+  unfold ProjectiveSpaceToQGrassmannian Projectivization.mk
+  simp only [ne_eq, Quotient.liftOn'_mk'']
+ 
+
+lemma QGrassmannianToProjectiveSpaceToQGrassmannian (x : QGrassmannian K V 1) :
+ProjectiveSpaceToQGrassmannian (QGrassmannianToProjectiveSpace x) = x := by
+  conv => lhs
+          congr
+          congr
+          rw [←(QGrassmannian.mk_rep K x)]
+  rw [QGrassmannianToProjectiveSpace_mk, ProjectiveSpaceToQGrassmannian_mk]
+  conv => rhs
+          rw [←(QGrassmannian.mk_rep K x)]
+          congr
+          rw [eq_const_of_unique (QGrassmannian.rep K x)]
+  
+lemma ProjectiveSpaceToQGrassmannianToProjectiveSpace (x : ℙ K V) :
+QGrassmannianToProjectiveSpace (ProjectiveSpaceToQGrassmannian x) = x := by
+  conv => lhs
+          rw [←(Projectivization.mk_rep x)]
+  rw [ProjectiveSpaceToQGrassmannian_mk, QGrassmannianToProjectiveSpace_mk, Projectivization.mk_rep]
+
+def QGrassmannianEquivProjectiveSpace : QGrassmannian K V 1 ≃ ℙ K V :=
+{
+  toFun := QGrassmannianToProjectiveSpace 
+  invFun := ProjectiveSpaceToQGrassmannian
+  left_inv := QGrassmannianToProjectiveSpaceToQGrassmannian
+  right_inv := ProjectiveSpaceToQGrassmannianToProjectiveSpace
+}
+
+
+variable (r) {W : Type*} [AddCommGroup W] [Module K W]
 
 /-- An injective semilinear map of vector spaces induces a map on QGrassmannians. -/
 -- Less general than the version for projective spaces because LinearIndependent.map' requires the two rings to be equal.
@@ -372,6 +451,7 @@ Function.Injective (QGrassmannian.map r f hf) := by
   apply SetLike.coe_injective'  
   exact Function.Injective.image_injective hf hxy 
 
+
 @[simp]
 lemma QGrassmannian.map_id : QGrassmannian.map r (LinearMap.id : V →ₗ[K] V) (LinearEquiv.refl K V).injective = id := by
   ext ⟨v⟩
@@ -385,7 +465,7 @@ lemma QGrassmannian.map_comp {U : Type*} [AddCommGroup U] [Module K U] (f : V �
   rfl 
 
 
--- TODO : comparison with ℙ if r = 1; define an Equiv between QGrass and Grass
+
 
 
   
