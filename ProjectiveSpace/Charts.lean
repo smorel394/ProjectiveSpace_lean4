@@ -2,10 +2,14 @@ import Mathlib.Tactic
 import Mathlib.LinearAlgebra.ProjectiveSpace.Basic
 import Mathlib.Topology.Algebra.Module.Basic
 import ProjectiveSpace.Grassmannian 
+import Mathlib.Topology.Algebra.Module.FiniteDimension
+
 
 open Classical
 noncomputable section 
 
+
+section NoTopology 
 
 variable {r : ℕ} {𝕜 E U : Type*} [DivisionRing 𝕜] [AddCommGroup E] [Module 𝕜 E] [AddCommGroup U] [Module 𝕜 U]
 
@@ -172,6 +176,86 @@ InverseChart φ (Chart φ x) = x := by
   ext u
   simp only [Submodule.mem_map, exists_exists_and_eq_and, LinearEquiv.symm_apply_apply, exists_eq_right]
    
+
+lemma ChartInverseChart_aux (φ : E ≃ₗ[𝕜] (Fin r → 𝕜) × U) (f : (Fin r → 𝕜) →ₗ[𝕜] U) {u : E}
+(hu : u ∈ φ.symm '' (LinearMap.graph f)) :
+(φ u).2 = f (φ u).1 := by
+  rw [LinearEquiv.image_symm_eq_preimage] at hu
+  simp only [Set.mem_preimage, SetLike.mem_coe, LinearMap.mem_graph_iff] at hu 
+  exact hu
+
+lemma ChartInverseChart (φ : E ≃ₗ[𝕜] (Fin r → 𝕜) × U) (f : (Fin r → 𝕜) →ₗ[𝕜] U) :
+Chart φ (InverseChart φ f) = f := by
+  unfold Chart
+  simp only [InverseChart_codomainGoodset, dite_true]
+  apply LinearMap.ext 
+  intro v 
+  simp only [LinearMap.coe_comp, LinearEquiv.coe_coe, Submodule.coeSubtype, Function.comp_apply, LinearMap.snd_apply]
+  rw [ChartInverseChart_aux φ f]
+  . apply congrArg
+    change LinearMap.fst 𝕜 _ _ _ = v 
+    erw [←(LinearMap.comp_apply (f := LinearMap.fst 𝕜 _ _) (g := φ.toLinearMap))]
+    have hf := InverseChart_codomainGoodset φ f
+    rw [Goodset_iff_equiv] at hf  
+    erw [←(LinearMap.comp_apply (f := LinearMap.comp (LinearMap.fst 𝕜 _ _) φ.toLinearMap) (x := v)
+      (g := LinearMap.comp (Submodule.subtype _) (LinearEquiv.symm (LinearEquiv.ofBijective _ hf)).toLinearMap))]
+    conv => rhs 
+            rw [←(LinearMap.id_apply (R := 𝕜) (M := Fin r → 𝕜) v)]
+    apply congrFun
+    rw [←LinearMap.comp_assoc]
+    change 
+      ↑(LinearMap.comp (LinearMap.domRestrict (LinearMap.comp (LinearMap.fst 𝕜 _ _) φ.toLinearMap) (InverseChart φ f).1) 
+      (LinearEquiv.symm (LinearEquiv.ofBijective _ hf)).toLinearMap) = fun v => LinearMap.id v 
+    simp only [LinearMap.coe_comp, LinearEquiv.coe_coe, LinearMap.id_coe, id_eq] 
+    rw [←LinearEquiv.invFun_eq_symm]
+    have heq : (LinearMap.domRestrict (LinearMap.comp (LinearMap.fst 𝕜 (Fin r → 𝕜) U) φ.toLinearMap) (InverseChart φ f).1) =
+      (LinearEquiv.ofBijective _ hf).toLinearMap := by
+      ext u
+      simp only [LinearMap.domRestrict_apply, LinearMap.coe_comp, LinearEquiv.coe_coe, Function.comp_apply,
+        LinearMap.fst_apply, LinearEquiv.ofBijective_apply]
+    nth_rewrite 1 [heq]
+    erw [←LinearEquiv.toFun_eq_coe]
+    ext v 
+    simp only [AddHom.toFun_eq_coe, LinearMap.coe_toAddHom, LinearEquiv.coe_coe, LinearEquiv.invFun_eq_symm,
+      Function.comp_apply, LinearEquiv.apply_symm_apply]   
+  . change _ ∈ Submodule.map φ.symm (LinearMap.graph f)
+    unfold InverseChart
+    simp only [SetLike.coe_mem]
+
+/- Definition of the chart as LocalEquiv.-/
+
+def Chart_LocalEquiv (φ : E ≃ₗ[𝕜] (Fin r → 𝕜) × U) : LocalEquiv (Grassmannian 𝕜 E r) ((Fin r → 𝕜) →ₗ[𝕜] U) :=
+{
+  toFun := Chart φ
+  invFun := InverseChart φ 
+  source := Goodset ((LinearMap.fst 𝕜 (Fin r → 𝕜) U).comp φ.toLinearMap)
+  target := ⊤
+  map_source' := by tauto 
+  map_target' := fun f _ => InverseChart_codomainGoodset φ f
+  left_inv' := fun _ hW  => InverseChartChart φ hW  
+  right_inv' := fun f _ => ChartInverseChart φ f   
+}
+
+end Grassmannian
+end NoTopology
+
+section Topology
+
+namespace Grassmannian
+
+variable {𝕜 E U : Type*} [NormedDivisionRing 𝕜] [NormedAddCommGroup E] [Module 𝕜 E] [BoundedSMul 𝕜 E]
+[NormedAddCommGroup U] [Module 𝕜 U] [BoundedSMul 𝕜 E] [CompleteSpace 𝕜]
+
+def ContChart (φ : E ≃ₗ[𝕜] (Fin r → 𝕜) × U) : Grassmannian 𝕜 E r → ((Fin r → 𝕜) →L[𝕜] U) := by
+  intro W
+  exact LinearMap.toContinuousLinearMap (𝕜 := 𝕜) (E := Fin r → 𝕜) (Chart φ W) 
+
+
+end Grassmannian
+end Topology
+
+
+
 #exit 
 
 
