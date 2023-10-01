@@ -7,8 +7,7 @@ import Mathlib.Analysis.LocallyConvex.BalancedCoreHull
 import Mathlib.Data.Real.Basic
 
 
-
-
+#check balancedCoreAux 
 
 open Classical
 noncomputable section 

@@ -65,6 +65,14 @@ W ∈ Goodset φ ↔ Function.Bijective (LinearMap.domRestrict φ W.1) := by
       exact h
     . exact fun h => by simp only [h, Submodule.zero_mem, map_zero, and_self]
 
+lemma GoodsetPreimage (φ : E →ₗ[𝕜] (Fin r → 𝕜)) {v : Fin r → E} (hv : LinearIndependent 𝕜 v) :
+Grassmannian.mk 𝕜 v hv ∈ Goodset φ ↔ LinearIndependent 𝕜 (φ ∘ v) := by
+  rw [Goodset]
+  simp only [ge_iff_le, Set.mem_setOf_eq]
+  rw [Grassmannian.mk_apply, ←disjoint_iff]
+  exact ⟨fun h => LinearIndependent.map hv h, fun h => Submodule.range_ker_disjoint h⟩
+  
+
 /- Definition of the charts.-/
 
 def Chart (φ : E ≃ₗ[𝕜] (Fin r → 𝕜) × U) : Grassmannian 𝕜 E r → ((Fin r → 𝕜) →ₗ[𝕜] U) := by 
@@ -243,12 +251,34 @@ section Topology
 
 namespace Grassmannian
 
-variable {𝕜 E U : Type*} [NormedDivisionRing 𝕜] [NormedAddCommGroup E] [Module 𝕜 E] [BoundedSMul 𝕜 E]
-[NormedAddCommGroup U] [Module 𝕜 U] [BoundedSMul 𝕜 E] [CompleteSpace 𝕜]
+-- Note: if my changes to mathlib are accepted, change the NontriviallyNormedField 𝕜 to 
+--NontriviallyNormedDivisionRing 𝕜.
+variable {𝕜 E U : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [Module 𝕜 E] [BoundedSMul 𝕜 E]
+[NormedAddCommGroup U] [Module 𝕜 U] [BoundedSMul 𝕜 U] [CompleteSpace 𝕜] {r : ℕ}
 
-def ContChart (φ : E ≃ₗ[𝕜] (Fin r → 𝕜) × U) : Grassmannian 𝕜 E r → ((Fin r → 𝕜) →L[𝕜] U) := by
-  intro W
-  exact LinearMap.toContinuousLinearMap (𝕜 := 𝕜) (E := Fin r → 𝕜) (Chart φ W) 
+/- The goodset of a continuous linear map φ : E → (Fin r → 𝕜) is open.-/
+
+lemma GoodsetIsOpen_aux1 (φ : E →L[𝕜] (Fin r → 𝕜)) : IsOpen {v : Fin r → E | LinearIndependent 𝕜 (φ ∘ v)} := sorry
+
+lemma GoodsetIsOpen_aux2 (φ : E →L[𝕜] (Fin r → 𝕜)) : IsOpen {v : {v : Fin r → E // LinearIndependent 𝕜 v} 
+| LinearIndependent 𝕜 (φ ∘ v.1)} := by
+  
+
+
+lemma GoodsetIsOpen (φ : E →L[𝕜] (Fin r → 𝕜)) : IsOpen (Goodset φ.toLinearMap) := by 
+  rw [isOpen_coinduced]
+  have heq : (Grassmannian.mk' 𝕜)⁻¹' (Goodset φ.toLinearMap) = 
+    {v : {v : Fin r → E // LinearIndependent 𝕜 v} | LinearIndependent 𝕜 (φ ∘ v.1)} := by
+    ext v 
+    simp only [Set.mem_preimage, mk'_eq_mk, Set.mem_setOf_eq] 
+    exact GoodsetPreimage φ.toLinearMap v.2
+  rw [heq]
+  exact GoodsetIsOpen_aux2 φ
+
+
+def ContChart (φ : E ≃ₗ[𝕜] (Fin r → 𝕜) × U) : Grassmannian 𝕜 E r → ((Fin r → 𝕜) →L[𝕜] U) := 
+fun W => LinearMap.toContinuousLinearMap (Chart φ W) 
+
 
 
 end Grassmannian

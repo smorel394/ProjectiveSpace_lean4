@@ -368,6 +368,11 @@ QGrassmannianEquivGrassmannian K V r (QGrassmannian.mk' K v)
 theorem Grassmannian.mk'_eq_mk (v : { v : Fin r → V // LinearIndependent K v}) : 
 Grassmannian.mk' K v = Grassmannian.mk K v.1 v.2 := rfl
 
+lemma Grassmannian.mk_apply (v : Fin r → V) (hv : LinearIndependent K v) :
+(Grassmannian.mk K v hv).1 = Submodule.span K (Set.range v) := by
+  unfold Grassmannian.mk 
+  erw [QGrassmannianToGrassmannian_apply']
+
 variable {K}
 
 def Grassmannian.rep (x : Grassmannian K V r) : Fin r → V :=
@@ -540,7 +545,7 @@ lemma QGrassmannian.map_comp {U : Type*} [AddCommGroup U] [Module K U] (f : V �
 
 /- Topologies. -/
 
-variable {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
+variable {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [Module 𝕜 E] [BoundedSMul 𝕜 E]
 
 /-- We equip the QGrassmannian with the "coinduced" topology from the natural map
 `mk' : {v : Fin r → E // LinearIndependent 𝕜 v} → QGrassmannanian 𝕜 V r`. -/
@@ -551,7 +556,7 @@ TopologicalSpace.coinduced (QGrassmannian.mk' 𝕜) instTopologicalSpaceSubtype
 an induced topology, see Equiv.induced_symm and Equiv.coinduced_symm.-/
 
 instance : TopologicalSpace (Grassmannian 𝕜 E r) :=
-TopologicalSpace.coinduced (QGrassmannianEquivGrassmannian 𝕜 E r) inferInstance  
+TopologicalSpace.coinduced (Grassmannian.mk' 𝕜) instTopologicalSpaceSubtype 
 
 end
 
